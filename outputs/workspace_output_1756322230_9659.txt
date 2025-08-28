@@ -1,0 +1,3 @@
+
+   INFO  Controller [app/Http/Controllers/GradingScaleController.php] created successfully.  
+

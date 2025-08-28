@@ -1,0 +1,6 @@
+total 12
+drwxr-xr-x  4 root root   79 Aug 27 15:56 .
+drwxr-xr-x  1 root root  152 Aug 27 15:56 ..
+drwxr-xr-x 12 root root 4096 Aug 27 15:56 darul-abrar-madrasa
+drwxr-xr-x  2 root root 4096 Aug 27 16:32 outputs
+-rw-r--r--  1 root root 1958 Aug 27 15:54 todo.md

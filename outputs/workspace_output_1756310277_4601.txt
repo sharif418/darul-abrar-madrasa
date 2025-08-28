@@ -1,0 +1,3 @@
+
+   INFO  Migration [database/migrations/2025_08_27_155759_create_notices_table.php] created successfully.  
+

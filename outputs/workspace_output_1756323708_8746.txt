@@ -1,0 +1,101 @@
+297:    public function myResults(Request $request)
+298-    {
+299-        $student = Auth::user()->student;
+300-        
+301-        if (!$student) {
+302-            abort(403, 'You are not registered as a student.');
+303-        }
+304-
+305-        // Get all exams with published results for this student's class
+306-        $exams = Exam::where('class_id', $student->class_id)
+307-            ->where('is_result_published', true)
+308-            ->orderBy('start_date', 'desc')
+309-            ->get();
+310-            
+311-        // Get exam summaries
+312-        $examSummaries = [];
+313-        $selectedExam = null;
+314-        $examResults = collect();
+315-        $overallResult = null;
+316-        $position = 'N/A';
+317-        
+318-        foreach ($exams as $exam) {
+319-            $results = Result::where('exam_id', $exam->id)
+320-                ->where('student_id', $student->id)
+321-                ->with('subject')
+322-                ->get();
+323-                
+324-            if ($results->count() > 0) {
+325-                $totalFullMarks = $results->sum(function ($result) {
+326-                    return $result->subject->full_mark;
+327-                });
+328-                
+329-                $totalObtainedMarks = $results->sum('marks_obtained');
+330-                $totalGpaPoints = $results->sum('gpa_point');
+331-                $averageGpa = $results->count() > 0 ? $totalGpaPoints / $results->count() : 0;
+332-                
+333-                $failedSubjects = $results->where('is_passed', false)->count();
+334-                
+335-                $examSummaries[$exam->id] = [
+336-                    'name' => $exam->name,
+337-                    'date' => $exam->start_date->format('M Y'),
+338-                    'subjects' => $results->count(),
+339-                    'full' => $totalFullMarks,
+340-                    'obtained' => $totalObtainedMarks,
+341-                    'percentage' => $totalFullMarks > 0 ? round(($totalObtainedMarks / $totalFullMarks) * 100, 2) : 0,
+342-                    'average_gpa' => round($averageGpa, 2),
+343-                    'failed' => $failedSubjects,
+344-                ];
+345-            }
+346-        }
+347-        
+348-        // If exam_id is provided, get detailed results for that exam
+349-        if ($request->filled('exam_id') && isset($examSummaries[$request->exam_id])) {
+350-            $selectedExam = Exam::find($request->exam_id);
+351-            
+352-            $examResults = Result::where('exam_id', $request->exam_id)
+353-                ->where('student_id', $student->id)
+354-                ->with(['subject', 'exam'])
+355-                ->get();
+356-                
+357-            // Get overall result
+358-            $overallResult = $selectedExam->getStudentResult($student->id);
+359-                
+360-            // Calculate position in class
+361-            $classResults = $selectedExam->getClassRankList();
+362-            
+363-            foreach ($classResults as $studentId => $result) {
+364-                if ($studentId == $student->id) {
+365-                    $position = $result['rank'];
+366-                    break;
+367-                }
+368-            }
+369-            
+370-            // Format position with suffix
+371-            if (is_numeric($position)) {
+372-                $suffix = 'th';
+373-                if ($position % 10 == 1 && $position % 100 != 11) {
+374-                    $suffix = 'st';
+375-                } elseif ($position % 10 == 2 && $position % 100 != 12) {
+376-                    $suffix = 'nd';
+377-                } elseif ($position % 10 == 3 && $position % 100 != 13) {
+378-                    $suffix = 'rd';
+379-                }
+380-                
+381-                $position = $position . $suffix;
+382-            }
+383-        }
+384-        
+385-        return view('results.my-results', compact(
+386-            'student',
+387-            'exams',
+388-            'examSummaries',
+389-            'selectedExam',
+390-            'examResults',
+391-            'overallResult',
+392-            'position'
+393-        ));
+394-    }
+395-    
+396-    /**
+397-     * Generate PDF mark sheet for a student.

@@ -1,0 +1,38 @@
+
+  Dropping all tables ............................................ 7.66ms DONE
+
+   INFO  Preparing database.  
+
+  Creating migration table ....................................... 3.23ms DONE
+
+   INFO  Running migrations.  
+
+  0001_01_01_000000_create_users_table ........................... 6.78ms DONE
+  0001_01_01_000001_create_cache_table ........................... 1.70ms DONE
+  0001_01_01_000002_create_jobs_table ............................ 4.97ms DONE
+  2025_08_27_160116_create_attendances_table ..................... 4.27ms FAIL
+
+   Illuminate\Database\QueryException 
+
+  SQLSTATE[HY000]: General error: 1005 Can't create table `darul_abrar_madrasa`.`attendances` (errno: 150 "Foreign key constraint is incorrectly formed") (Connection: mysql, SQL: alter table `attendances` add constraint `attendances_student_id_foreign` foreign key (`student_id`) references `students` (`id`) on delete cascade)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:824
+    820▕                     $this->getName(), $query, $this->prepareBindings($bindings), $e
+    821▕                 );
+    822▕             }
+    823▕ 
+  ➜ 824▕             throw new QueryException(
+    825▕                 $this->getName(), $query, $this->prepareBindings($bindings), $e
+    826▕             );
+    827▕         }
+    828▕     }
+
+      [2m+9 vendor frames [22m
+
+  10  database/migrations/2025_08_27_160116_create_attendances_table.php:14
+      Illuminate\Support\Facades\Facade::__callStatic()
+      [2m+37 vendor frames [22m
+
+  48  artisan:16
+      Illuminate\Foundation\Application::handleCommand()
+

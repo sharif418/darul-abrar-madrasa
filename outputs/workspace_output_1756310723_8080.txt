@@ -1,0 +1,3 @@
+
+   INFO  Model [app/Models/Notice.php] created successfully.  
+

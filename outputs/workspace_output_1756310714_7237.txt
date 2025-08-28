@@ -1,0 +1,11 @@
+
+  Dropping all tables ............................................ 6.91ms DONE
+
+   INFO  Preparing database.  
+
+  Creating migration table ....................................... 2.54ms DONE
+
+   INFO  Running migrations.  
+
+  2025_08_27_160354_create_all_madrasa_tables ................... 69.44ms DONE
+

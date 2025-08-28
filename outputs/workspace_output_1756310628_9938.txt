@@ -1,0 +1,7 @@
+
+   INFO  Rolling back migrations.  
+
+  0001_01_01_000002_create_jobs_table ............................ 4.08ms DONE
+  0001_01_01_000001_create_cache_table ........................... 1.07ms DONE
+  0001_01_01_000000_create_users_table ........................... 1.91ms DONE
+

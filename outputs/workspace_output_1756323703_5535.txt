@@ -1,0 +1,51 @@
+297:    public function myResults(Request $request)
+298-    {
+299-        $student = Auth::user()->student;
+300-        
+301-        if (!$student) {
+302-            abort(403, 'You are not registered as a student.');
+303-        }
+304-
+305-        // Get all exams with published results for this student's class
+306-        $exams = Exam::where('class_id', $student->class_id)
+307-            ->where('is_result_published', true)
+308-            ->orderBy('start_date', 'desc')
+309-            ->get();
+310-            
+311-        // Get exam summaries
+312-        $examSummaries = [];
+313-        $selectedExam = null;
+314-        $examResults = collect();
+315-        $overallResult = null;
+316-        $position = 'N/A';
+317-        
+318-        foreach ($exams as $exam) {
+319-            $results = Result::where('exam_id', $exam->id)
+320-                ->where('student_id', $student->id)
+321-                ->with('subject')
+322-                ->get();
+323-                
+324-            if ($results->count() > 0) {
+325-                $totalFullMarks = $results->sum(function ($result) {
+326-                    return $result->subject->full_mark;
+327-                });
+328-                
+329-                $totalObtainedMarks = $results->sum('marks_obtained');
+330-                $totalGpaPoints = $results->sum('gpa_point');
+331-                $averageGpa = $results->count() > 0 ? $totalGpaPoints / $results->count() : 0;
+332-                
+333-                $failedSubjects = $results->where('is_passed', false)->count();
+334-                
+335-                $examSummaries[$exam->id] = [
+336-                    'name' => $exam->name,
+337-                    'date' => $exam->start_date->format('M Y'),
+338-                    'subjects' => $results->count(),
+339-                    'full' => $totalFullMarks,
+340-                    'obtained' => $totalObtainedMarks,
+341-                    'percentage' => $totalFullMarks > 0 ? round(($totalObtainedMarks / $totalFullMarks) * 100, 2) : 0,
+342-                    'average_gpa' => round($averageGpa, 2),
+343-                    'failed' => $failedSubjects,
+344-                ];
+345-            }
+346-        }
+347-        
