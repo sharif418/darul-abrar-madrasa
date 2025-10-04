@@ -83,8 +83,9 @@
                 </div>
                 
                 <div class="mb-4">
-                    <label for="admission_number" class="block text-gray-700 text-sm font-bold mb-2">Admission Number *</label>
-                    <input type="text" name="admission_number" id="admission_number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('admission_number') border-red-500 @enderror" value="{{ old('admission_number') }}" required>
+                    <label for="admission_number" class="block text-gray-700 text-sm font-bold mb-2">Admission Number</label>
+                    <input type="text" name="admission_number" id="admission_number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('admission_number') border-red-500 @enderror" value="{{ old('admission_number') }}" placeholder="Leave empty for auto-generation (DABM-2025-XXX)">
+                    <p class="text-xs text-gray-500 mt-1">Leave empty to auto-generate admission number</p>
                 </div>
                 
                 <div class="mb-4">

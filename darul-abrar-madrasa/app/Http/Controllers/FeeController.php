@@ -16,11 +16,16 @@ class FeeController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Fee::with(['student', 'collectedBy']);
+        $query = Fee::with(['student.user', 'student.class', 'collectedBy']);
 
         // Apply filters
         if ($request->has('status') && $request->status != '') {
-            $query->where('status', $request->status);
+            if ($request->status === 'overdue') {
+                $query->where('status', '!=', 'paid')
+                      ->where('due_date', '<', now());
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         if ($request->has('fee_type') && $request->fee_type != '') {
@@ -29,6 +34,12 @@ class FeeController extends Controller
 
         if ($request->has('student_id') && $request->student_id != '') {
             $query->where('student_id', $request->student_id);
+        }
+
+        if ($request->has('class_id') && $request->class_id != '') {
+            $query->whereHas('student', function($q) use ($request) {
+                $q->where('class_id', $request->class_id);
+            });
         }
 
         if ($request->has('date_from') && $request->date_from != '') {
@@ -40,14 +51,50 @@ class FeeController extends Controller
         }
 
         // Get fee types for filter dropdown
-        $feeTypes = Fee::select('fee_type')->distinct()->pluck('fee_type');
+        $feeTypes = Fee::select('fee_type')->distinct()->pluck('fee_type', 'fee_type');
         
         // Get students for filter dropdown
-        $students = Student::select('id', 'name', 'student_id')->orderBy('name')->get();
+        $students = Student::with('user:id,name')->get();
+
+        // Get classes for filter
+        $classes = \App\Models\ClassRoom::with('department')->get();
+
+        // Calculate statistics
+        $totalFees = Fee::sum('amount');
+        $collectedFees = Fee::whereIn('status', ['paid', 'partial'])->sum('paid_amount');
+        $pendingFees = Fee::whereIn('status', ['unpaid', 'partial'])
+            ->get()
+            ->sum(function($fee) {
+                return $fee->amount - $fee->paid_amount;
+            });
+        $overdueFees = Fee::where('status', '!=', 'paid')
+            ->where('due_date', '<', now())
+            ->get()
+            ->sum(function($fee) {
+                return $fee->amount - $fee->paid_amount;
+            });
+        
+        $collectionRate = $totalFees > 0 ? ($collectedFees / $totalFees) * 100 : 0;
+        $pendingFeesCount = Fee::whereIn('status', ['unpaid', 'partial'])->count();
+        $overdueFeesCount = Fee::where('status', '!=', 'paid')
+            ->where('due_date', '<', now())
+            ->count();
 
         $fees = $query->latest()->paginate(15);
 
-        return view('fees.index', compact('fees', 'feeTypes', 'students'));
+        return view('fees.index', compact(
+            'fees', 
+            'feeTypes', 
+            'students', 
+            'classes',
+            'totalFees',
+            'collectedFees',
+            'pendingFees',
+            'overdueFees',
+            'collectionRate',
+            'pendingFeesCount',
+            'overdueFeesCount'
+        ));
     }
 
     /**
@@ -55,7 +102,7 @@ class FeeController extends Controller
      */
     public function create()
     {
-        $students = Student::select('id', 'name', 'student_id')->orderBy('name')->get();
+        $students = Student::with('user:id,name')->get();
         $feeTypes = ['admission', 'monthly', 'exam', 'library', 'transport', 'hostel', 'other'];
         
         return view('fees.create', compact('students', 'feeTypes'));
@@ -119,7 +166,7 @@ class FeeController extends Controller
     public function edit(string $id)
     {
         $fee = Fee::findOrFail($id);
-        $students = Student::select('id', 'name', 'student_id')->orderBy('name')->get();
+        $students = Student::with('user:id,name')->get();
         $feeTypes = ['admission', 'monthly', 'exam', 'library', 'transport', 'hostel', 'other'];
         
         return view('fees.edit', compact('fee', 'students', 'feeTypes'));
@@ -264,29 +311,44 @@ class FeeController extends Controller
         }
         
         if ($request->has('date_from') && $request->date_from != '') {
-            $query->whereDate('payment_date', '>=', $request->date_from);
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->has('date_to') && $request->date_to != '') {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        // Get fee types for filter dropdown
+        $feeTypes = Fee::select('fee_type')->distinct()->pluck('fee_type');
+
+        // Get collection summary (separate query to avoid GROUP BY issues)
+        $summaryQuery = Fee::whereIn('status', ['paid', 'partial'])
+            ->where('paid_amount', '>', 0);
+        
+        if ($request->has('fee_type') && $request->fee_type != '') {
+            $summaryQuery->where('fee_type', $request->fee_type);
+        }
+        
+        if ($request->has('date_from') && $request->date_from != '') {
+            $summaryQuery->whereDate('created_at', '>=', $request->date_from);
         }
         
         if ($request->has('date_to') && $request->date_to != '') {
-            $query->whereDate('payment_date', '<=', $request->date_to);
+            $summaryQuery->whereDate('created_at', '<=', $request->date_to);
         }
-        
-        // Get fee types for filter dropdown
-        $feeTypes = Fee::select('fee_type')->distinct()->pluck('fee_type');
-        
-        // Get collection summary
-        $summary = $query->select(
+
+        $summary = $summaryQuery->select(
             DB::raw('SUM(paid_amount) as total_collected'),
             DB::raw('COUNT(*) as total_transactions'),
             'fee_type'
         )
         ->groupBy('fee_type')
         ->get();
-        
+
         $totalCollected = $summary->sum('total_collected');
-        
+
         // Get detailed collection data
-        $collections = $query->latest('payment_date')->paginate(15);
+        $collections = $query->orderBy('id', 'desc')->paginate(15);
         
         return view('fees.reports.collection', compact('collections', 'feeTypes', 'summary', 'totalCollected'));
     }
@@ -296,36 +358,75 @@ class FeeController extends Controller
      */
     public function outstandingReport(Request $request)
     {
-        $query = Fee::with(['student'])
+        $query = Fee::with(['student.user'])
             ->whereIn('status', ['unpaid', 'partial']);
-            
+
         // Apply filters
         if ($request->has('fee_type') && $request->fee_type != '') {
             $query->where('fee_type', $request->fee_type);
         }
-        
+
         if ($request->has('overdue_only') && $request->overdue_only == '1') {
             $query->where('due_date', '<', now());
         }
-        
+
         // Get fee types for filter dropdown
         $feeTypes = Fee::select('fee_type')->distinct()->pluck('fee_type');
+
+        // Get outstanding summary (separate query to avoid GROUP BY issues)
+        $summaryQuery = Fee::whereIn('status', ['unpaid', 'partial']);
         
-        // Get outstanding summary
-        $summary = $query->select(
+        if ($request->has('fee_type') && $request->fee_type != '') {
+            $summaryQuery->where('fee_type', $request->fee_type);
+        }
+        
+        if ($request->has('overdue_only') && $request->overdue_only == '1') {
+            $summaryQuery->where('due_date', '<', now());
+        }
+
+        $summary = $summaryQuery->select(
             DB::raw('SUM(amount - paid_amount) as total_outstanding'),
             DB::raw('COUNT(*) as total_records'),
             'fee_type'
         )
         ->groupBy('fee_type')
         ->get();
-        
+
         $totalOutstanding = $summary->sum('total_outstanding');
-        
+
         // Get detailed outstanding data
-        $outstandingFees = $query->latest('due_date')->paginate(15);
+        $outstandingFees = $query->orderBy('due_date', 'asc')->paginate(15);
         
         return view('fees.reports.outstanding', compact('outstandingFees', 'feeTypes', 'summary', 'totalOutstanding'));
+    }
+
+    /**
+     * Show payment form for a fee.
+     */
+    public function showPaymentForm($id)
+    {
+        $fee = Fee::with(['student.user'])->findOrFail($id);
+        
+        if ($fee->status === 'paid') {
+            return redirect()->route('fees.show', $fee->id)
+                ->with('info', 'This fee has already been fully paid.');
+        }
+        
+        return view('fees.payment', compact('fee'));
+    }
+
+    /**
+     * Show reports index page.
+     */
+    public function reportsIndex()
+    {
+        // Calculate statistics
+        $totalFees = Fee::sum('amount');
+        $collectedFees = Fee::sum('paid_amount');
+        $outstandingFees = $totalFees - $collectedFees;
+        $collectionRate = $totalFees > 0 ? ($collectedFees / $totalFees) * 100 : 0;
+
+        return view('fees.reports.index', compact('totalFees', 'collectedFees', 'outstandingFees', 'collectionRate'));
     }
 
     /**
@@ -333,10 +434,8 @@ class FeeController extends Controller
      */
     public function createBulk()
     {
-        $students = Student::select('id', 'name', 'student_id', 'class_id')
-            ->with('class')
+        $students = Student::with(['user:id,name', 'class'])
             ->orderBy('class_id')
-            ->orderBy('name')
             ->get();
             
         $feeTypes = ['admission', 'monthly', 'exam', 'library', 'transport', 'hostel', 'other'];

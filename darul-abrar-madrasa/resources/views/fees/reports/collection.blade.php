@@ -7,24 +7,24 @@
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-3xl font-bold text-gray-800">Fee Collection Report</h1>
         <div class="flex space-x-2">
-            <x-button href="{{ route('fees.index') }}" color="secondary">
+            <a href="{{ route('fees.index') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg inline-flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
                 </svg>
                 Back to Fees
-            </x-button>
-            <x-button href="{{ route('fees.reports.outstanding') }}" color="warning">
+            </a>
+            <a href="{{ route('fees.reports.outstanding') }}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg inline-flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Outstanding Report
-            </x-button>
-            <x-button onclick="window.print()" color="success">
+            </a>
+            <button onclick="window.print()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
                 Print Report
-            </x-button>
+            </button>
         </div>
     </div>
 
@@ -33,34 +33,34 @@
         <h2 class="text-lg font-semibold mb-4">Filter Collections</h2>
         <form action="{{ route('fees.reports.collection') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <x-label for="fee_type" value="Fee Type" />
-                <x-select id="fee_type" name="fee_type" class="block mt-1 w-full">
+                <label for="fee_type" class="block text-sm font-medium text-gray-700 mb-1">Fee Type</label>
+                <select id="fee_type" name="fee_type" class="block mt-1 w-full">
                     <option value="">All Types</option>
                     @foreach($feeTypes as $type)
                         <option value="{{ $type }}" {{ request('fee_type') == $type ? 'selected' : '' }}>
                             {{ ucfirst($type) }}
                         </option>
                     @endforeach
-                </x-select>
+                </select>
             </div>
             
             <div>
-                <x-label for="date_from" value="Payment Date From" />
-                <x-input id="date_from" type="date" name="date_from" value="{{ request('date_from') }}" class="block mt-1 w-full" />
+                <label for="date_from" class="block text-sm font-medium text-gray-700 mb-1">Payment Date From</label>
+                <input id="date_from" type="date" name="date_from" value="{{ request('date_from') }}" class="block mt-1 w-full" />
             </div>
             
             <div>
-                <x-label for="date_to" value="Payment Date To" />
-                <x-input id="date_to" type="date" name="date_to" value="{{ request('date_to') }}" class="block mt-1 w-full" />
+                <label for="date_to" class="block text-sm font-medium text-gray-700 mb-1">Payment Date To</label>
+                <input id="date_to" type="date" name="date_to" value="{{ request('date_to') }}" class="block mt-1 w-full" />
             </div>
             
             <div class="flex items-end">
-                <x-button type="submit" color="primary">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                     </svg>
                     Apply Filters
-                </x-button>
+                </button>
                 <a href="{{ route('fees.reports.collection') }}" class="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -254,7 +254,7 @@
                             <a href="{{ route('fees.show', $fee->id) }}" class="text-blue-600 hover:text-blue-900 mr-3">
                                 <i class="fas fa-eye"></i>
                             </a>
-                            <a href="{{ route('fees.generate-invoice', $fee->id) }}" class="text-green-600 hover:text-green-900" title="Generate Invoice">
+                            <a href="{{ route('fees.invoice', $fee->id) }}" class="text-green-600 hover:text-green-900" title="Generate Invoice">
                                 <i class="fas fa-file-invoice"></i>
                             </a>
                         </td>

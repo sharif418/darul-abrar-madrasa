@@ -79,13 +79,16 @@ Route::middleware(['auth'])->group(function () {
         
         // Exam management
         Route::resource('exams', ExamController::class);
+        Route::put('/exams/{exam}/publish-results', [ExamController::class, 'publishResults'])->name('exams.publish-results');
         
         // Fee management
         Route::resource('fees', FeeController::class);
         Route::get('/fees/create-bulk', [FeeController::class, 'createBulk'])->name('fees.create-bulk');
         Route::post('/fees/store-bulk', [FeeController::class, 'storeBulk'])->name('fees.store-bulk');
-        Route::get('/fees/{fee}/invoice', [FeeController::class, 'generateInvoice'])->name('fees.generate-invoice');
+        Route::get('/fees/{fee}/invoice', [FeeController::class, 'generateInvoice'])->name('fees.invoice');
+        Route::get('/fees/{fee}/payment', [FeeController::class, 'showPaymentForm'])->name('fees.payment');
         Route::post('/fees/{fee}/record-payment', [FeeController::class, 'recordPayment'])->name('fees.record-payment');
+        Route::get('/fees-reports', [FeeController::class, 'reportsIndex'])->name('fees.reports');
         Route::get('/fees-reports/collection', [FeeController::class, 'collectionReport'])->name('fees.reports.collection');
         Route::get('/fees-reports/outstanding', [FeeController::class, 'outstandingReport'])->name('fees.reports.outstanding');
         

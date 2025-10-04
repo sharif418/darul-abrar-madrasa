@@ -7,24 +7,24 @@
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-3xl font-bold text-gray-800">Fee Details</h1>
         <div class="flex space-x-2">
-            <x-button href="{{ route('fees.index') }}" color="secondary">
+            <a href="{{ route('fees.index') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg inline-flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
                 </svg>
                 Back to Fees
-            </x-button>
-            <x-button href="{{ route('fees.edit', $fee->id) }}" color="warning">
+            </a>
+            <a href="{{ route('fees.edit', $fee->id) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg inline-flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
                 Edit
-            </x-button>
-            <x-button href="{{ route('fees.generate-invoice', $fee->id) }}" color="success">
+            </a>
+            <a href="{{ route('fees.invoice', $fee->id) }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Generate Invoice
-            </x-button>
+            </a>
         </div>
     </div>
 
@@ -190,42 +190,50 @@
                         
                         <div class="space-y-4">
                             <div>
-                                <x-label for="paid_amount" value="Payment Amount" />
-                                <x-input id="paid_amount" type="number" name="paid_amount" value="{{ old('paid_amount', $fee->remainingAmount) }}" step="0.01" min="0.01" max="{{ $fee->remainingAmount }}" class="block mt-1 w-full" required />
-                                <x-input-error for="paid_amount" class="mt-2" />
+                                <label for="paid_amount" class="block text-sm font-medium text-gray-700 mb-1">Payment Amount</label>
+                                <input id="paid_amount" type="number" name="paid_amount" value="{{ old('paid_amount', $fee->remainingAmount) }}" step="0.01" min="0.01" max="{{ $fee->remainingAmount }}" class="block mt-1 w-full" required />
+                                @error('paid_amount')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                             </div>
                             
                             <div>
-                                <x-label for="payment_method" value="Payment Method" />
-                                <x-select id="payment_method" name="payment_method" class="block mt-1 w-full" required>
+                                <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                                <select id="payment_method" name="payment_method" class="block mt-1 w-full" required>
                                     <option value="">Select Payment Method</option>
                                     <option value="cash" {{ old('payment_method') == 'cash' ? 'selected' : '' }}>Cash</option>
                                     <option value="bank_transfer" {{ old('payment_method') == 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
                                     <option value="check" {{ old('payment_method') == 'check' ? 'selected' : '' }}>Check</option>
                                     <option value="online" {{ old('payment_method') == 'online' ? 'selected' : '' }}>Online Payment</option>
-                                </x-select>
-                                <x-input-error for="payment_method" class="mt-2" />
+                                </select>
+                                @error('payment_method')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                             </div>
                             
                             <div>
-                                <x-label for="transaction_id" value="Transaction ID (Optional)" />
-                                <x-input id="transaction_id" type="text" name="transaction_id" value="{{ old('transaction_id') }}" class="block mt-1 w-full" />
-                                <x-input-error for="transaction_id" class="mt-2" />
+                                <label for="transaction_id" class="block text-sm font-medium text-gray-700 mb-1">Transaction ID (Optional)</label>
+                                <input id="transaction_id" type="text" name="transaction_id" value="{{ old('transaction_id') }}" class="block mt-1 w-full" />
+                                @error('transaction_id')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                             </div>
                             
                             <div>
-                                <x-label for="remarks" value="Remarks (Optional)" />
-                                <x-textarea id="remarks" name="remarks" class="block mt-1 w-full" rows="2">{{ old('remarks') }}</x-textarea>
-                                <x-input-error for="remarks" class="mt-2" />
+                                <label for="remarks" class="block text-sm font-medium text-gray-700 mb-1">Remarks (Optional)</label>
+                                <textarea id="remarks" name="remarks" class="block mt-1 w-full" rows="2">{{ old('remarks') }}</textarea>
+                                @error('remarks')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                             </div>
                             
                             <div class="flex justify-end">
-                                <x-button type="submit" color="success">
+                                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
                                     Record Payment
-                                </x-button>
+                                </button>
                             </div>
                         </div>
                     </form>

@@ -82,14 +82,25 @@ class Result extends Model
      */
     public function calculateGradeAndGpa()
     {
-        $gradingScale = GradingScale::getGradeForMark($this->marks_obtained);
+        // Load subject if not already loaded
+        if (!$this->relationLoaded('subject')) {
+            $this->load('subject');
+        }
         
-        if ($gradingScale) {
+        // Calculate percentage
+        $percentage = ($this->marks_obtained / $this->subject->full_mark) * 100;
+        
+        // Check if passed (marks >= pass_mark)
+        $this->is_passed = $this->marks_obtained >= $this->subject->pass_mark;
+        
+        // Get grading scale based on percentage
+        $gradingScale = GradingScale::getGradeForMark($percentage);
+        
+        if ($gradingScale && $this->is_passed) {
             $this->grade = $gradingScale->grade_name;
             $this->gpa_point = $gradingScale->gpa_point;
-            $this->is_passed = $gradingScale->gpa_point > 0; // Assuming GPA 0 is fail
         } else {
-            // Default fallback if no grading scale matches
+            // Failed or no matching grade
             $this->grade = 'F';
             $this->gpa_point = 0.00;
             $this->is_passed = false;

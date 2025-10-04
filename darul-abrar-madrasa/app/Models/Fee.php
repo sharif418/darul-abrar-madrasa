@@ -24,6 +24,7 @@ class Fee extends Model
         'paid_amount',
         'payment_method',
         'transaction_id',
+        'invoice_number',
         'remarks',
         'collected_by',
     ];

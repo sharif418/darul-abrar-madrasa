@@ -6,12 +6,12 @@
 <div class="container mx-auto px-4 py-6">
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-3xl font-bold text-gray-800">Bulk Create Fees</h1>
-        <x-button href="{{ route('fees.index') }}" color="secondary">
+        <a href="{{ route('fees.index') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg inline-flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
             </svg>
             Back to Fees
-        </x-button>
+        </a>
     </div>
 
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
@@ -20,34 +20,42 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div class="md:col-span-2">
-                    <x-label for="fee_type" value="Fee Type" />
-                    <x-select id="fee_type" name="fee_type" class="block mt-1 w-full" required>
+                    <label for="fee_type" class="block text-sm font-medium text-gray-700 mb-1">Fee Type</label>
+                    <select id="fee_type" name="fee_type" class="block mt-1 w-full" required>
                         <option value="">Select Fee Type</option>
                         @foreach($feeTypes as $type)
                             <option value="{{ $type }}" {{ old('fee_type') == $type ? 'selected' : '' }}>
                                 {{ ucfirst($type) }}
                             </option>
                         @endforeach
-                    </x-select>
-                    <x-input-error for="fee_type" class="mt-2" />
+                    </select>
+                    @error('fee_type')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
                 
                 <div>
-                    <x-label for="amount" value="Amount" />
-                    <x-input id="amount" type="number" name="amount" value="{{ old('amount') }}" step="0.01" min="0" class="block mt-1 w-full" required />
-                    <x-input-error for="amount" class="mt-2" />
+                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                    <input id="amount" type="number" name="amount" value="{{ old('amount') }}" step="0.01" min="0" class="block mt-1 w-full" required />
+                    @error('amount')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
                 
                 <div>
-                    <x-label for="due_date" value="Due Date" />
-                    <x-input id="due_date" type="date" name="due_date" value="{{ old('due_date', date('Y-m-d')) }}" class="block mt-1 w-full" required />
-                    <x-input-error for="due_date" class="mt-2" />
+                    <label for="due_date" class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                    <input id="due_date" type="date" name="due_date" value="{{ old('due_date', date('Y-m-d')) }}" class="block mt-1 w-full" required />
+                    @error('due_date')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
                 
                 <div class="md:col-span-2">
-                    <x-label for="remarks" value="Remarks (Optional)" />
-                    <x-textarea id="remarks" name="remarks" class="block mt-1 w-full" rows="2">{{ old('remarks') }}</x-textarea>
-                    <x-input-error for="remarks" class="mt-2" />
+                    <label for="remarks" class="block text-sm font-medium text-gray-700 mb-1">Remarks (Optional)</label>
+                    <textarea id="remarks" name="remarks" class="block mt-1 w-full" rows="2">{{ old('remarks') }}</textarea>
+                    @error('remarks')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
             </div>
             
@@ -84,12 +92,12 @@
             </div>
             
             <div class="flex justify-end mt-6">
-                <x-button type="submit" color="primary">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                     Create Fees
-                </x-button>
+                </a>
             </div>
         </form>
     </div>
