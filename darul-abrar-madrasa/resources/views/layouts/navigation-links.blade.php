@@ -6,7 +6,7 @@
     Dashboard
 </a>
 
-@if(auth()->user()->role === 'admin')
+@if(auth()->check() && auth()->user()->role === 'admin')
     <!-- User Management -->
     <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') ? 'sidebar-active' : 'sidebar-link' }}">
         <svg xmlns="http://www.w3.org/2000/svg" class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -106,7 +106,7 @@
     </a> --}}
 @endif
 
-@if(auth()->user()->role === 'admin' || auth()->user()->role === 'teacher')
+@if(auth()->check() && (auth()->user()->role === 'admin' || auth()->user()->role === 'teacher'))
     <!-- Attendance Management -->
     <a href="{{ route('attendances.index') }}" class="{{ request()->routeIs('attendances.*') ? 'sidebar-active' : 'sidebar-link' }}">
         <svg xmlns="http://www.w3.org/2000/svg" class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -132,7 +132,7 @@
     </a>
 @endif
 
-@if(auth()->user()->role === 'student')
+@if(auth()->check() && auth()->user()->role === 'student')
     <!-- My Attendance -->
     <a href="{{ route('my.attendance') }}" class="{{ request()->routeIs('my.attendance') ? 'sidebar-active' : 'sidebar-link' }}">
         <svg xmlns="http://www.w3.org/2000/svg" class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">

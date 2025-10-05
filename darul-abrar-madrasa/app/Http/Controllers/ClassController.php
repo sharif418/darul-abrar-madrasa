@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreClassRequest;
+use App\Http\Requests\UpdateClassRequest;
 use App\Models\ClassRoom;
 use App\Models\Department;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ClassController extends Controller
 {
@@ -13,32 +16,41 @@ class ClassController extends Controller
      */
     public function index(Request $request)
     {
-        $query = ClassRoom::with('department')->withCount(['students', 'subjects']);
+        try {
+            $query = ClassRoom::with('department')->withCount(['students', 'subjects']);
 
-        // Search functionality
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('class_numeric', 'like', "%{$search}%")
-                  ->orWhere('section', 'like', "%{$search}%");
-            });
+            // Search functionality
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('class_numeric', 'like', "%{$search}%")
+                      ->orWhere('section', 'like', "%{$search}%");
+                });
+            }
+
+            // Filter by department
+            if ($request->filled('department_id')) {
+                $query->where('department_id', $request->department_id);
+            }
+
+            // Filter by status
+            if ($request->filled('is_active')) {
+                $query->where('is_active', $request->is_active);
+            }
+
+            $classes = $query->latest()->paginate(15);
+            $departments = Department::where('is_active', true)->get();
+
+            return view('classes.index', compact('classes', 'departments'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load classes list', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to load classes. Please try again.');
         }
-
-        // Filter by department
-        if ($request->filled('department_id')) {
-            $query->where('department_id', $request->department_id);
-        }
-
-        // Filter by status
-        if ($request->filled('is_active')) {
-            $query->where('is_active', $request->is_active);
-        }
-
-        $classes = $query->latest()->paginate(15);
-        $departments = Department::where('is_active', true)->get();
-
-        return view('classes.index', compact('classes', 'departments'));
     }
 
     /**
@@ -53,24 +65,30 @@ class ClassController extends Controller
     /**
      * Store a newly created class in storage.
      */
-    public function store(Request $request)
+    public function store(StoreClassRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'department_id' => 'required|exists:departments,id',
-            'class_numeric' => 'nullable|string|max:50',
-            'section' => 'nullable|string|max:50',
-            'capacity' => 'required|integer|min:1',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
+        try {
+            $data = $request->validated();
+            $data['is_active'] = $request->has('is_active') ? 1 : 0;
 
-        $validated['is_active'] = $request->has('is_active') ? 1 : 0;
+            $class = ClassRoom::create($data);
 
-        ClassRoom::create($validated);
+            Log::info('Class created successfully', [
+                'class_id' => $class->id,
+                'user_id' => auth()->id(),
+            ]);
 
-        return redirect()->route('classes.index')
-            ->with('success', 'Class created successfully.');
+            return redirect()->route('classes.index')
+                ->with('success', 'Class created successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to create class', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'data' => $request->validated(),
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to create class. Please try again.');
+        }
     }
 
     /**
@@ -78,16 +96,26 @@ class ClassController extends Controller
      */
     public function show(ClassRoom $class)
     {
-        $class->load(['department', 'students.user', 'subjects.teacher.user']);
-        $class->loadCount(['students', 'subjects', 'exams']);
+        try {
+            $class->load(['department', 'students.user', 'subjects.teacher.user']);
+            $class->loadCount(['students', 'subjects', 'exams']);
 
-        // Get recent exams
-        $recentExams = $class->exams()
-            ->latest()
-            ->take(5)
-            ->get();
+            // Get recent exams
+            $recentExams = $class->exams()
+                ->latest()
+                ->take(5)
+                ->get();
 
-        return view('classes.show', compact('class', 'recentExams'));
+            return view('classes.show', compact('class', 'recentExams'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load class details', [
+                'class_id' => $class->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to load class details. Please try again.');
+        }
     }
 
     /**
@@ -102,24 +130,31 @@ class ClassController extends Controller
     /**
      * Update the specified class in storage.
      */
-    public function update(Request $request, ClassRoom $class)
+    public function update(UpdateClassRequest $request, ClassRoom $class)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'department_id' => 'required|exists:departments,id',
-            'class_numeric' => 'nullable|string|max:50',
-            'section' => 'nullable|string|max:50',
-            'capacity' => 'required|integer|min:1',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
+        try {
+            $data = $request->validated();
+            $data['is_active'] = $request->has('is_active') ? 1 : 0;
 
-        $validated['is_active'] = $request->has('is_active') ? 1 : 0;
+            $class->update($data);
 
-        $class->update($validated);
+            Log::info('Class updated successfully', [
+                'class_id' => $class->id,
+                'user_id' => auth()->id(),
+            ]);
 
-        return redirect()->route('classes.index')
-            ->with('success', 'Class updated successfully.');
+            return redirect()->route('classes.index')
+                ->with('success', 'Class updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to update class', [
+                'class_id' => $class->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'data' => $request->validated(),
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to update class. Please try again.');
+        }
     }
 
     /**
@@ -127,21 +162,49 @@ class ClassController extends Controller
      */
     public function destroy(ClassRoom $class)
     {
-        // Check if class has students
-        if ($class->students()->count() > 0) {
+        try {
+            // Check if class has students
+            if ($class->students()->count() > 0) {
+                Log::warning('Attempted to delete class with enrolled students', [
+                    'class_id' => $class->id,
+                    'students_count' => $class->students()->count(),
+                    'user_id' => auth()->id(),
+                ]);
+
+                return redirect()->route('classes.index')
+                    ->with('error', 'Cannot delete class with enrolled students. Please transfer or remove students first.');
+            }
+
+            // Check if class has subjects
+            if ($class->subjects()->count() > 0) {
+                Log::warning('Attempted to delete class with assigned subjects', [
+                    'class_id' => $class->id,
+                    'subjects_count' => $class->subjects()->count(),
+                    'user_id' => auth()->id(),
+                ]);
+
+                return redirect()->route('classes.index')
+                    ->with('error', 'Cannot delete class with assigned subjects. Please remove subjects first.');
+            }
+
+            $classId = $class->id;
+            $class->delete();
+
+            Log::info('Class deleted successfully', [
+                'class_id' => $classId,
+                'user_id' => auth()->id(),
+            ]);
+
             return redirect()->route('classes.index')
-                ->with('error', 'Cannot delete class with enrolled students. Please transfer or remove students first.');
+                ->with('success', 'Class deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to delete class', [
+                'class_id' => $class->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to delete class. Please try again.');
         }
-
-        // Check if class has subjects
-        if ($class->subjects()->count() > 0) {
-            return redirect()->route('classes.index')
-                ->with('error', 'Cannot delete class with assigned subjects. Please remove subjects first.');
-        }
-
-        $class->delete();
-
-        return redirect()->route('classes.index')
-            ->with('success', 'Class deleted successfully.');
     }
 }

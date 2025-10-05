@@ -1,61 +1,151 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Darul Abrar Madrasa Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel 12-based madrasa management system for managing students, teachers, classes, subjects, exams, results, fees, attendance, notices, and more.
 
-## About Laravel
+Key technologies:
+- PHP 8.2, Laravel 12
+- Spatie Permissions for RBAC
+- Barryvdh DomPDF for PDF generation
+- Livewire 3.x (marks entry module)
+- Repository + Form Request validation patterns
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Authentication and role-based access (admin, teacher, student, staff)
+- Departments, classes, subjects management
+- Students and teachers CRUD with avatar uploads
+- Exams and results (bulk entry, statistics, mark-sheet PDF, class summary PDF)
+- Attendance (bulk entry by class, student view)
+- Fees (create, update, record payments, invoices, collection and outstanding reports)
+- Notices (public and role-targeted)
+- Seeders for demo data and role/permission setup
+- Logging and robust error handling in controllers
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Requirements
 
-## Learning Laravel
+- PHP >= 8.2
+- Composer
+- Database (SQLite/MySQL/PostgreSQL) and configured PHP extensions
+- Node.js (optional, if you build frontend assets)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Installation
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+1. Clone repository
+   - git clone <repo-url>
+   - cd darul-abrar-madrasa
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+2. Environment setup
+   - cp .env.example .env
+   - Configure database connection in .env
+   - Set APP_NAME="Darul Abrar Madrasa"
+   - Recommended: LOG_CHANNEL=stack and LOG_LEVEL=debug for local
 
-## Laravel Sponsors
+3. Install dependencies
+   - composer install
+   - php artisan key:generate
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+4. Migrate and seed
+   - php artisan migrate --seed
+   - This runs:
+     - RolePermissionSeeder (idempotent)
+     - AdminUserSeeder (idempotent, skips in production)
+     - DemoDataSeeder (only in local/dev)
 
-### Premium Partners
+5. Storage (if needed)
+   - php artisan storage:link
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+6. Serve
+   - php artisan serve
+   - Open http://localhost:8000
 
-## Contributing
+## Default Credentials
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- Admin
+  - Email: admin@darulabrar.com
+  - Password: Admin@2025
 
-## Code of Conduct
+## Project Structure Highlights
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- app/Http/Controllers
+  - Thin controllers with try/catch, logging, and HTTP concerns
+- app/Http/Requests
+  - Form Request validation for all major modules (Students, Teachers, Fees, Attendance, Exams, Results, Departments, Classes, Subjects, Users, Notices)
+- app/Repositories
+  - Data access and business logic abstraction (Students, Teachers, Fees, Attendance, Exams, Results)
+- app/Services
+  - FileUploadService centralizes file upload/delete logic
+- app/Models
+  - Rich models with scopes, accessors, and domain methods (e.g., Result::calculateGradeAndGpa)
 
-## Security Vulnerabilities
+## Results Module (Key Endpoints)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- Bulk entry form:
+  - GET /results/create/{exam_id}/{class_id}/{subject_id}
+- Store bulk results:
+  - POST /results/store-bulk
+- Student mark-sheet PDF:
+  - GET /results/{exam}/{student}/mark-sheet
+- Class result summary PDF:
+  - GET /results/{exam}/class-summary/pdf
+
+Note: Results use marks_obtained and gpa_point everywhere. Grade/GPA are computed and persisted via Result::calculateGradeAndGpa().
+
+## Fees Module
+
+- Invoice PDF:
+  - GET /fees/{fee}/invoice
+- Record payment:
+  - POST /fees/{fee}/record-payment
+  - Payload: paid_amount, payment_method, transaction_id (optional), remarks (optional)
+- Reports:
+  - Collection report: /fees-reports/collection
+  - Outstanding report (with overdue filter): /fees-reports/outstanding
+
+## Seeders
+
+- RolePermissionSeeder
+  - Idempotent via firstOrCreate + syncPermissions
+- AdminUserSeeder
+  - Idempotent via updateOrCreate; warns and skips in production
+- DemoDataSeeder
+  - Dev-only seed for departments, classes, subjects, teachers, students, exams, fees, attendance, notices
+  - Results created with marks_obtained then grade/gpa_point computed by model
+
+## Testing
+
+A comprehensive manual testing plan is documented here:
+- PHASE1_TESTING_CHECKLIST.md
+
+Focus areas:
+- Result entry (marks_obtained), GPA calculation, PDFs
+- Attendance bulk entry (studentId-keyed map)
+- Fees payment recording (payment_method), overdue filters, invoice PDFs
+- Routes and access control for all roles
+- Form Request validations for all modules
+
+## Phase 1 Stabilization Summary
+
+- Implemented Form Requests for major modules
+- Introduced Repository pattern
+- Standardized error handling and logging
+- Fixed field mismatches (marks_obtained, gpa_point)
+- Corrected PDF facade usage (Pdf)
+- Integrated FileUploadService in Student/Teacher repositories
+- Added routes for mark-sheet and class summary PDFs
+- Seeders made idempotent and safe for re-runs
+- Created PHASE1_TESTING_CHECKLIST.md
+
+## Troubleshooting
+
+- If PDFs fail to generate:
+  - Ensure barryvdh/laravel-dompdf is installed
+  - Use Pdf::loadView rather than PDF::loadView
+- Seeder re-runs:
+  - Safe to re-run RolePermissionSeeder and AdminUserSeeder
+  - DemoDataSeeder runs only in local/dev environment
+- Permissions:
+  - Make sure storage/ is writable if working with file uploads
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced under the MIT license.

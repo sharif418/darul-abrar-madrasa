@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreDepartmentRequest;
+use App\Http\Requests\UpdateDepartmentRequest;
 use App\Models\Department;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 
 class DepartmentController extends Controller
 {
@@ -13,26 +15,35 @@ class DepartmentController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Department::withCount(['classes', 'teachers']);
+        try {
+            $query = Department::withCount(['classes', 'teachers']);
 
-        // Search functionality
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
+            // Search functionality
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('code', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            // Filter by status
+            if ($request->filled('is_active')) {
+                $query->where('is_active', $request->is_active);
+            }
+
+            $departments = $query->latest()->paginate(15);
+
+            return view('departments.index', compact('departments'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load departments list', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to load departments. Please try again.');
         }
-
-        // Filter by status
-        if ($request->filled('is_active')) {
-            $query->where('is_active', $request->is_active);
-        }
-
-        $departments = $query->latest()->paginate(15);
-
-        return view('departments.index', compact('departments'));
     }
 
     /**
@@ -46,21 +57,30 @@ class DepartmentController extends Controller
     /**
      * Store a newly created department in storage.
      */
-    public function store(Request $request)
+    public function store(StoreDepartmentRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:departments',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
+        try {
+            $data = $request->validated();
+            $data['is_active'] = $request->has('is_active') ? 1 : 0;
 
-        $validated['is_active'] = $request->has('is_active') ? 1 : 0;
+            $department = Department::create($data);
 
-        Department::create($validated);
+            Log::info('Department created successfully', [
+                'department_id' => $department->id,
+                'user_id' => auth()->id(),
+            ]);
 
-        return redirect()->route('departments.index')
-            ->with('success', 'Department created successfully.');
+            return redirect()->route('departments.index')
+                ->with('success', 'Department created successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to create department', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'data' => $request->validated(),
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to create department. Please try again.');
+        }
     }
 
     /**
@@ -68,20 +88,30 @@ class DepartmentController extends Controller
      */
     public function show(Department $department)
     {
-        $department->loadCount(['classes', 'teachers']);
-        
-        // Get classes with student count
-        $classes = $department->classes()
-            ->withCount('students')
-            ->with('department')
-            ->get();
-        
-        // Get teachers
-        $teachers = $department->teachers()
-            ->with('user')
-            ->get();
+        try {
+            $department->loadCount(['classes', 'teachers']);
+            
+            // Get classes with student count
+            $classes = $department->classes()
+                ->withCount('students')
+                ->with('department')
+                ->get();
+            
+            // Get teachers
+            $teachers = $department->teachers()
+                ->with('user')
+                ->get();
 
-        return view('departments.show', compact('department', 'classes', 'teachers'));
+            return view('departments.show', compact('department', 'classes', 'teachers'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load department details', [
+                'department_id' => $department->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to load department details. Please try again.');
+        }
     }
 
     /**
@@ -95,21 +125,31 @@ class DepartmentController extends Controller
     /**
      * Update the specified department in storage.
      */
-    public function update(Request $request, Department $department)
+    public function update(UpdateDepartmentRequest $request, Department $department)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => ['required', 'string', 'max:50', Rule::unique('departments')->ignore($department->id)],
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
+        try {
+            $data = $request->validated();
+            $data['is_active'] = $request->has('is_active') ? 1 : 0;
 
-        $validated['is_active'] = $request->has('is_active') ? 1 : 0;
+            $department->update($data);
 
-        $department->update($validated);
+            Log::info('Department updated successfully', [
+                'department_id' => $department->id,
+                'user_id' => auth()->id(),
+            ]);
 
-        return redirect()->route('departments.index')
-            ->with('success', 'Department updated successfully.');
+            return redirect()->route('departments.index')
+                ->with('success', 'Department updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to update department', [
+                'department_id' => $department->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'data' => $request->validated(),
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to update department. Please try again.');
+        }
     }
 
     /**
@@ -117,20 +157,49 @@ class DepartmentController extends Controller
      */
     public function destroy(Department $department)
     {
-        // Check if department has classes or teachers
-        if ($department->classes()->count() > 0) {
+        try {
+            // Check if department has classes
+            if ($department->classes()->count() > 0) {
+                Log::warning('Attempted to delete department with existing classes', [
+                    'department_id' => $department->id,
+                    'classes_count' => $department->classes()->count(),
+                    'user_id' => auth()->id(),
+                ]);
+
+                return redirect()->route('departments.index')
+                    ->with('error', 'Cannot delete department with existing classes. Please reassign or delete classes first.');
+            }
+
+            // Check if department has teachers
+            if ($department->teachers()->count() > 0) {
+                Log::warning('Attempted to delete department with existing teachers', [
+                    'department_id' => $department->id,
+                    'teachers_count' => $department->teachers()->count(),
+                    'user_id' => auth()->id(),
+                ]);
+
+                return redirect()->route('departments.index')
+                    ->with('error', 'Cannot delete department with existing teachers. Please reassign or delete teachers first.');
+            }
+
+            $departmentId = $department->id;
+            $department->delete();
+
+            Log::info('Department deleted successfully', [
+                'department_id' => $departmentId,
+                'user_id' => auth()->id(),
+            ]);
+
             return redirect()->route('departments.index')
-                ->with('error', 'Cannot delete department with existing classes. Please reassign or delete classes first.');
+                ->with('success', 'Department deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to delete department', [
+                'department_id' => $department->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to delete department. Please try again.');
         }
-
-        if ($department->teachers()->count() > 0) {
-            return redirect()->route('departments.index')
-                ->with('error', 'Cannot delete department with existing teachers. Please reassign or delete teachers first.');
-        }
-
-        $department->delete();
-
-        return redirect()->route('departments.index')
-            ->with('success', 'Department deleted successfully.');
     }
 }

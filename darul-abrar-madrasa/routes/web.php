@@ -18,7 +18,12 @@ use App\Http\Controllers\StudyMaterialController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\GradingScaleController;
+use App\Http\Controllers\LessonPlanController;
 use Illuminate\Support\Facades\Route;
+
+// Constrain {notice} route parameter to numeric IDs to avoid conflicts with '/notices/public'
+Route::pattern('notice', '[0-9]+');
 
 /*
 |--------------------------------------------------------------------------
@@ -76,6 +81,12 @@ Route::middleware(['auth'])->group(function () {
         
         // Subject management
         Route::resource('subjects', SubjectController::class);
+
+        // Grading Scale management
+        Route::resource('grading-scales', GradingScaleController::class);
+
+        // Lesson Plan management
+        Route::resource('lesson-plans', LessonPlanController::class);
         
         // Exam management
         Route::resource('exams', ExamController::class);
@@ -118,6 +129,7 @@ Route::middleware(['auth'])->group(function () {
         
         // Result management
         Route::resource('results', ResultController::class);
+        Route::get('/results/{exam}/class-summary/pdf', [ResultController::class, 'generateClassResultSummary'])->name('results.class-summary.pdf');
     });
     
     // Student routes
@@ -127,13 +139,14 @@ Route::middleware(['auth'])->group(function () {
         
         // View own results
         Route::get('/my-results', [ResultController::class, 'myResults'])->name('my.results');
-        Route::get('/results/download/{exam}', [ResultController::class, 'downloadResult'])->name('results.download');
+        Route::get('/results/{exam}/{student}/mark-sheet', [ResultController::class, 'generateMarkSheet'])->name('results.mark-sheet');
         
         // View own fees
         Route::get('/my-fees', [FeeController::class, 'myFees'])->name('my.fees');
         
         // View study materials
         Route::get('/my-materials', [StudyMaterialController::class, 'myMaterials'])->name('my.materials');
+        Route::get('/study-materials/{studyMaterial}/download', [StudyMaterialController::class, 'download'])->name('study-materials.download');
     });
     
     // Common routes for all authenticated users
