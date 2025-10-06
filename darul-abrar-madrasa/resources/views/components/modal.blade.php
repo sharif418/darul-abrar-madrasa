@@ -64,7 +64,7 @@
             x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
             x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             class="inline-block w-full text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle {{ $maxWidthClass }} sm:w-full"
-            @click.away="open = false"
+            x-on:click.outside="open = false"
         >
             @if($title || $closeButton)
                 <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">

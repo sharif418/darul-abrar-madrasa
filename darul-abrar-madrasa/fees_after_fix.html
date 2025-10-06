@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="mK1fmQBdz4FLUQ80KwYRAwrMkcC9v292nfxH9BLn">
+
+    <title>Laravel</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+
+    <!-- Scripts -->
+    <script type="module" src="http://[::1]:5173/@vite/client" data-navigate-track="reload"></script><link rel="stylesheet" href="http://[::1]:5173/resources/css/app.css" data-navigate-track="reload" /><script type="module" src="http://[::1]:5173/resources/js/app.js" data-navigate-track="reload"></script>    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Livewire -->
+    <!-- Livewire Styles --><style >[wire\:loading][wire\:loading], [wire\:loading\.delay][wire\:loading\.delay], [wire\:loading\.inline-block][wire\:loading\.inline-block], [wire\:loading\.inline][wire\:loading\.inline], [wire\:loading\.block][wire\:loading\.block], [wire\:loading\.flex][wire\:loading\.flex], [wire\:loading\.table][wire\:loading\.table], [wire\:loading\.grid][wire\:loading\.grid], [wire\:loading\.inline-flex][wire\:loading\.inline-flex] {display: none;}[wire\:loading\.delay\.none][wire\:loading\.delay\.none], [wire\:loading\.delay\.shortest][wire\:loading\.delay\.shortest], [wire\:loading\.delay\.shorter][wire\:loading\.delay\.shorter], [wire\:loading\.delay\.short][wire\:loading\.delay\.short], [wire\:loading\.delay\.default][wire\:loading\.delay\.default], [wire\:loading\.delay\.long][wire\:loading\.delay\.long], [wire\:loading\.delay\.longer][wire\:loading\.delay\.longer], [wire\:loading\.delay\.longest][wire\:loading\.delay\.longest] {display: none;}[wire\:offline][wire\:offline] {display: none;}[wire\:dirty]:not(textarea):not(input):not(select) {display: none;}:root {--livewire-progress-bar-color: #2299dd;}[x-cloak] {display: none !important;}[wire\:cloak] {display: none !important;}</style>
+    
+    <!-- Custom Styles -->
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+    
+    </head>
+<body class="font-sans antialiased bg-gray-100">
+    <div x-data="{ sidebarOpen: false, scrolled: false }" @scroll.window="scrolled = window.scrollY > 10" class="min-h-screen">
+        <!-- Sidebar for mobile -->
+        <div x-show="sidebarOpen" class="fixed inset-0 z-40 lg:hidden" x-cloak>
+            <div x-show="sidebarOpen" 
+                 x-transition:enter="transition-opacity ease-linear duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition-opacity ease-linear duration-300"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-gray-600 bg-opacity-75"
+                 @click="sidebarOpen = false"
+                 aria-hidden="true">
+            </div>
+            
+            <div x-show="sidebarOpen" 
+                 x-transition:enter="transition ease-in-out duration-300 transform"
+                 x-transition:enter-start="-translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in-out duration-300 transform"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="-translate-x-full"
+                 class="relative flex-1 flex flex-col max-w-xs w-full bg-green-800">
+                
+                <div class="absolute top-0 right-0 -mr-12 pt-2">
+                    <button @click="sidebarOpen = false" class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+                        <span class="sr-only">Close sidebar</span>
+                        <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="flex-1 h-0 pt-5 pb-4 overflow-y-auto custom-scrollbar">
+                    <div class="flex-shrink-0 flex items-center px-4">
+                        <span class="text-white text-xl font-bold">Darul Abrar</span>
+                    </div>
+                    <nav class="mt-5 px-2 space-y-1">
+                        <div x-data="{
+        managementOpen: false,
+        academicOpen: false,
+        financialOpen: false,
+        communicationOpen: false,
+        myClassesOpen: false,
+        academicResourcesOpen: false,
+        myAcademicOpen: false,
+        myFinancialOpen: false
+    }" class="space-y-1 custom-scrollbar">
+
+    <!-- Dashboard -->
+    <a href="http://127.0.0.1:8000/dashboard"
+       class="sidebar-link touch-target"
+       aria-label="Dashboard">
+        <svg xmlns="http://www.w3.org/2000/svg" class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 12l2-2 7-7 7 7M5 10v10h14V10" />
+        </svg>
+        Dashboard
+    </a>
+
+            <!-- Management -->
+        <button type="button" @click="managementOpen = !managementOpen" class="nav-group-header w-full text-left touch-target" :aria-expanded="managementOpen.toString()">
+            <span class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="sidebar-icon mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
+                <span>Management</span>
+            </span>
+            <svg class="sidebar-icon chevron-icon" :class="managementOpen ? 'transform rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </button>
+        <div x-show="managementOpen" x-transition class="pl-8 space-y-1">
+            <a href="http://127.0.0.1:8000/users" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5-3M9 10a4 4 0 110-8"/></svg>Users</span>
+            </a>
+            <a href="http://127.0.0.1:8000/departments" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/></svg>Departments</span>
+            </a>
+            <a href="http://127.0.0.1:8000/classes" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/></svg>Classes</span>
+            </a>
+            <a href="http://127.0.0.1:8000/teachers" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7a4 4 0 118 0M12 11a5 5 0 00-5 5v3h10v-3a5 5 0 00-5-5z"/></svg>Teachers</span>
+            </a>
+            <a href="http://127.0.0.1:8000/students" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/></svg>Students</span>
+            </a>
+            <a href="http://127.0.0.1:8000/subjects" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20l9-5-9-5-9 5 9 5z"/></svg>Subjects</span>
+            </a>
+        </div>
+
+        <!-- Academic -->
+        <button type="button" @click="academicOpen = !academicOpen" class="nav-group-header w-full text-left touch-target" :aria-expanded="academicOpen.toString()">
+            <span class="flex items-center"><svg class="sidebar-icon mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/></svg><span>Academic</span></span>
+            <svg class="sidebar-icon chevron-icon" :class="academicOpen ? 'transform rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </button>
+        <div x-show="academicOpen" x-transition class="pl-8 space-y-1">
+            <a href="http://127.0.0.1:8000/exams" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6M9 16h6M9 8h6M5 7h14"/></svg>Exams</span></a>
+            <a href="http://127.0.0.1:8000/attendances" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 19h14"/></svg>Attendance</span></a>
+            <a href="http://127.0.0.1:8000/results" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7 20h10V6H5v14z"/></svg>Results</span></a>
+            <a href="http://127.0.0.1:8000/results" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Marks Entry</span></a>
+            <a href="http://127.0.0.1:8000/grading-scales" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg>Grading Scales</span></a>
+            <a href="http://127.0.0.1:8000/lesson-plans" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20l9-5-9-5-9 5 9 5z"/></svg>Lesson Plans</span></a>
+        </div>
+
+        <!-- Financial -->
+        <button type="button" @click="financialOpen = !financialOpen" class="nav-group-header w-full text-left touch-target" :aria-expanded="financialOpen.toString()">
+            <span class="flex items-center"><svg class="sidebar-icon mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-2.28 0-4 .895-4 2s1.72 2 4 2 4 .895 4 2-1.72 2-4 2m0-8c2.28 0 4 .895 4 2m-4-2V4m0 12v4"/></svg><span>Financial</span></span>
+            <svg class="sidebar-icon chevron-icon" :class="financialOpen ? 'transform rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </button>
+        <div x-show="financialOpen" x-transition class="pl-8 space-y-1">
+            <a href="http://127.0.0.1:8000/fees" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-2.28 0-4 .895-4 2s1.72 2 4 2 4 .895 4 2-1.72 2-4 2m0-8c2.28 0 4 .895 4 2m-4-2V4m0 12v4"/></svg>Fees</span></a>
+            <a href="http://127.0.0.1:8000/fees-reports" class="nav-group-item sidebar-active touch-target">
+                <span class="inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3v18M3 11h18"/></svg>
+                    Reports
+                </span>
+            </a>
+        </div>
+
+        <!-- Communication -->
+        <button type="button" @click="communicationOpen = !communicationOpen" class="nav-group-header w-full text-left touch-target" :aria-expanded="communicationOpen.toString()">
+            <span class="flex items-center"><svg class="sidebar-icon mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 11-6.219-8.56"/></svg><span>Communication</span></span>
+            <svg class="sidebar-icon chevron-icon" :class="communicationOpen ? 'transform rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </button>
+        <div x-show="communicationOpen" x-transition class="pl-8 space-y-1">
+            <a href="http://127.0.0.1:8000/notices" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h8m-8 4h6M5 4h14"/></svg>Notices</span></a>
+        </div>
+
+        <!-- Public Notices -->
+        <a href="http://127.0.0.1:8000/notices/public" class="sidebar-link touch-target">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-6.219-8.56"/></svg>
+            Public Notices
+        </a>
+    
+    
+    </div>
+                    </nav>
+                </div>
+                
+                <div class="flex-shrink-0 flex border-t border-green-700 p-4">
+                    <div class="flex items-center">
+                        <div>
+                                                            <div class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-green-600">
+                                    <span class="text-xl font-medium leading-none text-white">L</span>
+                                </div>
+                                                    </div>
+                        <div class="ml-3">
+                            <p class="text-base font-medium text-white">Local Admin</p>
+                            <p class="text-sm font-medium text-green-200 capitalize">admin</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-shrink-0 w-14">
+                <!-- Force sidebar to shrink to fit close icon -->
+            </div>
+        </div>
+
+        <!-- Static sidebar for desktop -->
+        <div class="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
+            <div class="flex-1 flex flex-col min-h-0 bg-green-800">
+                <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto custom-scrollbar">
+                    <div class="flex items-center flex-shrink-0 px-4">
+                        <span class="text-white text-xl font-bold">Darul Abrar</span>
+                    </div>
+                    <nav class="mt-5 flex-1 px-2 space-y-1">
+                        <div x-data="{
+        managementOpen: false,
+        academicOpen: false,
+        financialOpen: false,
+        communicationOpen: false,
+        myClassesOpen: false,
+        academicResourcesOpen: false,
+        myAcademicOpen: false,
+        myFinancialOpen: false
+    }" class="space-y-1 custom-scrollbar">
+
+    <!-- Dashboard -->
+    <a href="http://127.0.0.1:8000/dashboard"
+       class="sidebar-link touch-target"
+       aria-label="Dashboard">
+        <svg xmlns="http://www.w3.org/2000/svg" class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 12l2-2 7-7 7 7M5 10v10h14V10" />
+        </svg>
+        Dashboard
+    </a>
+
+            <!-- Management -->
+        <button type="button" @click="managementOpen = !managementOpen" class="nav-group-header w-full text-left touch-target" :aria-expanded="managementOpen.toString()">
+            <span class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="sidebar-icon mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
+                <span>Management</span>
+            </span>
+            <svg class="sidebar-icon chevron-icon" :class="managementOpen ? 'transform rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </button>
+        <div x-show="managementOpen" x-transition class="pl-8 space-y-1">
+            <a href="http://127.0.0.1:8000/users" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5-3M9 10a4 4 0 110-8"/></svg>Users</span>
+            </a>
+            <a href="http://127.0.0.1:8000/departments" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/></svg>Departments</span>
+            </a>
+            <a href="http://127.0.0.1:8000/classes" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/></svg>Classes</span>
+            </a>
+            <a href="http://127.0.0.1:8000/teachers" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7a4 4 0 118 0M12 11a5 5 0 00-5 5v3h10v-3a5 5 0 00-5-5z"/></svg>Teachers</span>
+            </a>
+            <a href="http://127.0.0.1:8000/students" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/></svg>Students</span>
+            </a>
+            <a href="http://127.0.0.1:8000/subjects" class="nav-group-item sidebar-link touch-target">
+                <span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20l9-5-9-5-9 5 9 5z"/></svg>Subjects</span>
+            </a>
+        </div>
+
+        <!-- Academic -->
+        <button type="button" @click="academicOpen = !academicOpen" class="nav-group-header w-full text-left touch-target" :aria-expanded="academicOpen.toString()">
+            <span class="flex items-center"><svg class="sidebar-icon mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/></svg><span>Academic</span></span>
+            <svg class="sidebar-icon chevron-icon" :class="academicOpen ? 'transform rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </button>
+        <div x-show="academicOpen" x-transition class="pl-8 space-y-1">
+            <a href="http://127.0.0.1:8000/exams" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6M9 16h6M9 8h6M5 7h14"/></svg>Exams</span></a>
+            <a href="http://127.0.0.1:8000/attendances" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 19h14"/></svg>Attendance</span></a>
+            <a href="http://127.0.0.1:8000/results" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7 20h10V6H5v14z"/></svg>Results</span></a>
+            <a href="http://127.0.0.1:8000/results" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Marks Entry</span></a>
+            <a href="http://127.0.0.1:8000/grading-scales" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg>Grading Scales</span></a>
+            <a href="http://127.0.0.1:8000/lesson-plans" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20l9-5-9-5-9 5 9 5z"/></svg>Lesson Plans</span></a>
+        </div>
+
+        <!-- Financial -->
+        <button type="button" @click="financialOpen = !financialOpen" class="nav-group-header w-full text-left touch-target" :aria-expanded="financialOpen.toString()">
+            <span class="flex items-center"><svg class="sidebar-icon mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-2.28 0-4 .895-4 2s1.72 2 4 2 4 .895 4 2-1.72 2-4 2m0-8c2.28 0 4 .895 4 2m-4-2V4m0 12v4"/></svg><span>Financial</span></span>
+            <svg class="sidebar-icon chevron-icon" :class="financialOpen ? 'transform rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </button>
+        <div x-show="financialOpen" x-transition class="pl-8 space-y-1">
+            <a href="http://127.0.0.1:8000/fees" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-2.28 0-4 .895-4 2s1.72 2 4 2 4 .895 4 2-1.72 2-4 2m0-8c2.28 0 4 .895 4 2m-4-2V4m0 12v4"/></svg>Fees</span></a>
+            <a href="http://127.0.0.1:8000/fees-reports" class="nav-group-item sidebar-active touch-target">
+                <span class="inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3v18M3 11h18"/></svg>
+                    Reports
+                </span>
+            </a>
+        </div>
+
+        <!-- Communication -->
+        <button type="button" @click="communicationOpen = !communicationOpen" class="nav-group-header w-full text-left touch-target" :aria-expanded="communicationOpen.toString()">
+            <span class="flex items-center"><svg class="sidebar-icon mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 11-6.219-8.56"/></svg><span>Communication</span></span>
+            <svg class="sidebar-icon chevron-icon" :class="communicationOpen ? 'transform rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </button>
+        <div x-show="communicationOpen" x-transition class="pl-8 space-y-1">
+            <a href="http://127.0.0.1:8000/notices" class="nav-group-item sidebar-link touch-target"><span class="inline-flex items-center"><svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h8m-8 4h6M5 4h14"/></svg>Notices</span></a>
+        </div>
+
+        <!-- Public Notices -->
+        <a href="http://127.0.0.1:8000/notices/public" class="sidebar-link touch-target">
+            <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-6.219-8.56"/></svg>
+            Public Notices
+        </a>
+    
+    
+    </div>
+                    </nav>
+                </div>
+                <div class="flex-shrink-0 flex border-t border-green-700 p-4">
+                    <div class="flex items-center">
+                        <div>
+                                                            <div class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-green-600">
+                                    <span class="text-xl font-medium leading-none text-white">L</span>
+                                </div>
+                                                    </div>
+                        <div class="ml-3">
+                            <p class="text-base font-medium text-white">Local Admin</p>
+                            <p class="text-sm font-medium text-green-200 capitalize">admin</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="lg:pl-64 flex flex-col flex-1">
+            <!-- Top navigation -->
+            <div class="sticky top-0 z-10 bg-white" :class="scrolled ? 'shadow-md' : 'shadow-sm'">
+                <div class="flex-1 px-4 flex justify-between h-16">
+                    <div class="flex">
+                        <button @click="sidebarOpen = true" class="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-green-500 lg:hidden">
+                            <span class="sr-only">Open sidebar</span>
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                            </svg>
+                        </button>
+                        <div class="flex-1 flex items-center px-4 lg:px-0">
+                            <h2 class="text-2xl font-semibold text-gray-900">
+                                Fee Reports                            </h2>
+                        </div>
+                    </div>
+                    <div class="ml-4 flex items-center md:ml-6">
+                        <!-- Profile dropdown -->
+                        <div x-data="{ open: false }" class="ml-3 relative">
+                            <div>
+                                <button @click="open = !open" class="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
+                                    <span class="sr-only">Open user menu</span>
+                                                                            <div class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-600">
+                                            <span class="text-sm font-medium leading-none text-white">L</span>
+                                        </div>
+                                                                    </button>
+                            </div>
+                            <div x-show="open" 
+                                 x-transition:enter="transition ease-out duration-100" 
+                                 x-transition:enter-start="transform opacity-0 scale-95" 
+                                 x-transition:enter-end="transform opacity-100 scale-100" 
+                                 x-transition:leave="transition ease-in duration-75" 
+                                 x-transition:leave-start="transform opacity-100 scale-100" 
+                                 x-transition:leave-end="transform opacity-0 scale-95" 
+                                 class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" 
+                                 role="menu" 
+                                 aria-orientation="vertical" 
+                                 aria-labelledby="user-menu-button" 
+                                 tabindex="-1"
+                                 x-on:click.outside="open = false"
+                                 x-cloak>
+                                <a href="http://127.0.0.1:8000/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Your Profile</a>
+                                <form method="POST" action="http://127.0.0.1:8000/logout">
+                                    <input type="hidden" name="_token" value="mK1fmQBdz4FLUQ80KwYRAwrMkcC9v292nfxH9BLn" autocomplete="off">                                    <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Sign out</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <main class="flex-1">
+                <!-- Toast Notification Component -->
+                <div id="toast-root" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+<script>
+(function() {
+  if (window.showToast) return;
+
+  const typeStyles = {
+    success: 'bg-green-600',
+    error: 'bg-red-600',
+    warning: 'bg-yellow-600',
+    info: 'bg-blue-600'
+  };
+
+  window.showToast = function(message, type = 'info', duration = 3000) {
+    try {
+      const root = document.getElementById('toast-root');
+      if (!root) return;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'pointer-events-auto rounded-md px-4 py-3 shadow-lg text-white flex items-start gap-2 transition-all duration-300 transform';
+      wrapper.classList.add(typeStyles[type] || typeStyles.info);
+
+      const icon = document.createElement('span');
+      icon.className = 'inline-flex items-center justify-center h-5 w-5 rounded-full bg-white/20 mr-1';
+      icon.innerHTML = '&#9888;';
+
+      const textWrap = document.createElement('div');
+
+      const title = document.createElement('div');
+      title.className = 'text-sm font-semibold capitalize';
+      title.textContent = type;
+
+      const body = document.createElement('div');
+      body.className = 'text-sm';
+      body.textContent = message;
+
+      textWrap.appendChild(title);
+      textWrap.appendChild(body);
+
+      wrapper.appendChild(icon);
+      wrapper.appendChild(textWrap);
+
+      root.appendChild(wrapper);
+
+      // Auto remove after duration
+      setTimeout(() => {
+        wrapper.classList.add('opacity-0', 'translate-y-1');
+        wrapper.addEventListener('transitionend', () => wrapper.remove(), { once: true });
+      }, duration);
+    } catch (e) {
+      // Fail silently if something goes wrong
+      console && console.warn && console.warn('Toast error', e);
+    }
+  };
+})();
+</script>
+                
+                <!-- Flash Messages -->
+                
+                
+                
+                
+                <!-- Page Content -->
+                <div class="container mx-auto px-4 py-6">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Fee Reports</h1>
+        <a href="http://127.0.0.1:8000/fees" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg inline-flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+            </svg>
+            Back to Fees
+        </a>
+    </div>
+
+    <!-- Report Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Collection Report Card -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-white text-xl font-semibold">Collection Report</h3>
+                        <p class="text-green-100 text-sm mt-1">View fee collection details</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 rounded-full p-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">
+                    Generate detailed reports of fee collections including payment methods, dates, and amounts collected.
+                </p>
+                <a href="http://127.0.0.1:8000/fees-reports/collection" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center w-full justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    View Collection Report
+                </a>
+            </div>
+        </div>
+
+        <!-- Outstanding Report Card -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            <div class="bg-gradient-to-r from-red-500 to-red-600 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-white text-xl font-semibold">Outstanding Report</h3>
+                        <p class="text-red-100 text-sm mt-1">View pending payments</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 rounded-full p-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">
+                    View all outstanding fees, overdue payments, and students with pending fee payments.
+                </p>
+                <a href="http://127.0.0.1:8000/fees-reports/outstanding" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg inline-flex items-center w-full justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    View Outstanding Report
+                </a>
+            </div>
+        </div>
+
+        <!-- Summary Statistics Card -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-white text-xl font-semibold">Fee Summary</h3>
+                        <p class="text-blue-100 text-sm mt-1">Overall statistics</p>
+                    </div>
+                    <div class="bg-white bg-opacity-20 rounded-full p-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Total Fees:</span>
+                        <span class="text-lg font-semibold text-gray-900">0.00 BDT</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Collected:</span>
+                        <span class="text-lg font-semibold text-green-600">0.00 BDT</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Outstanding:</span>
+                        <span class="text-lg font-semibold text-red-600">0.00 BDT</span>
+                    </div>
+                    <div class="pt-3 border-t border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Collection Rate:</span>
+                            <span class="text-lg font-semibold text-blue-600">0.0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="http://127.0.0.1:8000/fees/create" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg inline-flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Create New Fee
+            </a>
+            <a href="http://127.0.0.1:8000/fees/create-bulk" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg inline-flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Bulk Fee Creation
+            </a>
+            <a href="http://127.0.0.1:8000/fees" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg inline-flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                View All Fees
+            </a>
+        </div>
+    </div>
+</div>
+            </main>
+
+            <!-- Footer -->
+            <footer class="bg-white shadow mt-auto py-4">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center text-sm text-gray-500">
+                        &copy; 2025 Laravel. All rights reserved.
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Livewire Scripts -->
+    <!-- Escape Blade directive in CDN URL by doubling @ to avoid Blade parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/@livewire/livewire@3.x.x/dist/livewire.min.js" data-csrf="mK1fmQBdz4FLUQ80KwYRAwrMkcC9v292nfxH9BLn" defer></script>
+    
+    </body>
+</html>
