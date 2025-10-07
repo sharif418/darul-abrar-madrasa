@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Http\Requests\BulkStudentActionRequest;
 use App\Models\ClassRoom;
 use App\Models\Student;
 use App\Repositories\StudentRepository;
@@ -193,6 +194,107 @@ class StudentController extends Controller
             ]);
 
             return back()->with('error', 'Failed to delete student. Please try again.');
+        }
+    }
+
+    /**
+     * Bulk promote students to a target class.
+     */
+    public function bulkPromote(BulkStudentActionRequest $request)
+    {
+        try {
+            $data = $request->validated();
+
+            $updated = $this->studentRepository->bulkUpdateClass(
+                $data['student_ids'],
+                (int) $data['target_class_id']
+            );
+
+            Log::info('Bulk promote completed', [
+                'count' => $updated->count(),
+                'target_class_id' => (int) $data['target_class_id'],
+                'student_ids' => $data['student_ids'],
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->route('students.index')
+                ->with('success', $updated->count() . ' students promoted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to bulk promote students', [
+                'error' => $e->getMessage(),
+                'request' => $request->all(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to promote selected students. Please try again.');
+        }
+    }
+
+    /**
+     * Bulk transfer students to a target class (possibly different department).
+     */
+    public function bulkTransfer(BulkStudentActionRequest $request)
+    {
+        try {
+            $data = $request->validated();
+
+            $updated = $this->studentRepository->bulkUpdateClass(
+                $data['student_ids'],
+                (int) $data['target_class_id']
+            );
+
+            Log::info('Bulk transfer completed', [
+                'count' => $updated->count(),
+                'target_class_id' => (int) $data['target_class_id'],
+                'student_ids' => $data['student_ids'],
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->route('students.index')
+                ->with('success', $updated->count() . ' students transferred successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to bulk transfer students', [
+                'error' => $e->getMessage(),
+                'request' => $request->all(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to transfer selected students. Please try again.');
+        }
+    }
+
+    /**
+     * Bulk status update (activate/deactivate) for selected students.
+     */
+    public function bulkStatusUpdate(BulkStudentActionRequest $request)
+    {
+        try {
+            $data = $request->validated();
+
+            $updated = $this->studentRepository->bulkUpdateStatus(
+                $data['student_ids'],
+                (bool) $data['status']
+            );
+
+            Log::info('Bulk status update completed', [
+                'count' => $updated->count(),
+                'status' => (bool) $data['status'],
+                'student_ids' => $data['student_ids'],
+                'user_id' => auth()->id(),
+            ]);
+
+            $statusText = $data['status'] ? 'activated' : 'deactivated';
+
+            return redirect()->route('students.index')
+                ->with('success', $updated->count() . " students {$statusText} successfully.");
+        } catch (\Exception $e) {
+            Log::error('Failed to bulk update students status', [
+                'error' => $e->getMessage(),
+                'request' => $request->all(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to update status for selected students. Please try again.');
         }
     }
 }

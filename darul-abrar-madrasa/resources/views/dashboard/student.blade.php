@@ -75,7 +75,7 @@
                         </svg>
                     </x-slot>
                 </x-stat-card>
-                <x-stat-card title="Pending Fees" :value="$pendingFees->count()" color="red" clickable="true" link="{{ route('my.fees') }}">
+                <x-stat-card title="Pending Fees" value="{{ number_format($pendingFees, 2) }}" color="red" clickable="true" link="{{ route('my.fees') }}">
                     <x-slot name="icon">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
                              viewBox="0 0 24 24" stroke="currentColor">
@@ -158,7 +158,7 @@
                 <div class="font-semibold text-sm text-center">Download ID Card</div>
             </div>
         </a>
-        <a href="{{ route('lesson_plans.index') }}" class="rounded-xl p-4 gradient-blue text-white hover-lift">
+        <a href="{{ route('lesson-plans.index') }}" class="rounded-xl p-4 gradient-blue text-white hover-lift">
             <div class="flex flex-col items-center">
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
@@ -291,7 +291,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($pendingFees as $fee)
+                    @forelse($pendingFeeItems as $fee)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="py-2 px-4 border-b border-gray-200">{{ ucfirst($fee->fee_type) }}</td>
                             <td class="py-2 px-4 border-b border-gray-200">

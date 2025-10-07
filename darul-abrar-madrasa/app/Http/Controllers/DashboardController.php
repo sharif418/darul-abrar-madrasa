@@ -354,6 +354,12 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // Pending fees items list for table (unpaid or partial)
+        $pendingFeeItems = Fee::where('student_id', $student->id)
+            ->whereIn('status', ['unpaid', 'partial'])
+            ->orderBy('due_date', 'asc')
+            ->get();
+
         // Pending fees (sum outstanding)
         $pendingFees = (float) DB::table('fees')
             ->selectRaw('COALESCE(SUM(CASE WHEN status = "unpaid" THEN amount WHEN status = "partial" THEN amount - paid_amount ELSE 0 END),0) as due')
@@ -451,7 +457,7 @@ class DashboardController extends Controller
             return ['labels' => $labels, 'data' => $data];
         })();
 
-        // Fee payment timeline: label by due_date, data as payment percentage
+        // Fee payment timeline: label by due_date, datasets for Due and Paid amounts
         $feePaymentTimeline = (function () use ($student) {
             $fees = Fee::where('student_id', $student->id)
                 ->orderBy('due_date', 'asc')
@@ -468,13 +474,18 @@ class DashboardController extends Controller
                 return 'Invoice #' . $f->id;
             })->toArray();
 
-            $data = $fees->map(function ($f) {
-                $amount = (float) ($f->amount ?? 0);
-                $paid = (float) ($f->paid_amount ?? 0);
-                return $amount > 0 ? round(($paid / $amount) * 100, 2) : 0;
+            $paid = $fees->map(function ($f) {
+                return (float) ($f->paid_amount ?? 0);
             })->toArray();
 
-            return ['labels' => $labels, 'data' => $data];
+            $due = $fees->map(function ($f) {
+                $amount = (float) ($f->amount ?? 0);
+                $paidAmt = (float) ($f->paid_amount ?? 0);
+                return max(0, $amount - $paidAmt);
+            })->toArray();
+
+            // Keep 'data' as paid amounts to align with chart usage in the view
+            return ['labels' => $labels, 'data' => $paid, 'due' => $due];
         })();
 
         // Monthly attendance percentage for last 6 months
@@ -516,6 +527,7 @@ class DashboardController extends Controller
             'upcomingExams',
             'recentResults',
             'pendingFees',
+            'pendingFeeItems',
             'recentNotices',
             'attendanceTrend',
             'subjectWisePerformance',

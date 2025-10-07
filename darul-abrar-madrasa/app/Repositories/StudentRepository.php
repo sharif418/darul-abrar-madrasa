@@ -169,6 +169,36 @@ class StudentRepository
     }
 
     /**
+     * Bulk update class for a list of students.
+     *
+     * @param array<int> $studentIds
+     * @param int $targetClassId
+     * @return \Illuminate\Support\Collection<\App\Models\Student>
+     */
+    public function bulkUpdateClass(array $studentIds, int $targetClassId)
+    {
+        return DB::transaction(function () use ($studentIds, $targetClassId) {
+            Student::whereIn('id', $studentIds)->update(['class_id' => $targetClassId]);
+            return Student::whereIn('id', $studentIds)->get();
+        });
+    }
+
+    /**
+     * Bulk update active status for a list of students.
+     *
+     * @param array<int> $studentIds
+     * @param bool $status
+     * @return \Illuminate\Support\Collection<\App\Models\Student>
+     */
+    public function bulkUpdateStatus(array $studentIds, bool $status)
+    {
+        return DB::transaction(function () use ($studentIds, $status) {
+            Student::whereIn('id', $studentIds)->update(['is_active' => $status]);
+            return Student::whereIn('id', $studentIds)->get();
+        });
+    }
+
+    /**
      * Get student with statistics
      */
     public function getWithStats($studentId)

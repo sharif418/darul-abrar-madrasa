@@ -85,6 +85,18 @@ class ResultController extends Controller
     public function createBulk($exam_id, $class_id, $subject_id)
     {
         try {
+            // Allow 'latest' keyword to pick the most recent exam for the class
+            if ($exam_id === 'latest') {
+                $latestExam = Exam::where('class_id', $class_id)
+                    ->orderBy('end_date', 'desc')
+                    ->first();
+
+                if (!$latestExam) {
+                    return back()->with('error', 'No exams found for the selected class.');
+                }
+                $exam_id = $latestExam->id;
+            }
+
             $exam = Exam::findOrFail($exam_id);
             $class = ClassRoom::findOrFail($class_id);
             $subject = Subject::findOrFail($subject_id);

@@ -243,9 +243,20 @@
                     </script>
                 @endif
 
-                <!-- Page Content -->
+            <!-- Page Content -->
                 @yield('content')
             </main>
+            <!-- Global loading overlay -->
+            <div x-cloak x-show="$store.ui && $store.ui.loading" class="fixed inset-0 z-50 flex items-center justify-center">
+                <div class="absolute inset-0 bg-black/40"></div>
+                <div class="relative bg-white rounded-lg shadow-lg px-6 py-5 flex items-center gap-3">
+                    <svg class="animate-spin text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="32" height="32">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 004 12z"></path>
+                    </svg>
+                    <span class="text-sm text-gray-700">Loading...</span>
+                </div>
+            </div>
 
             <!-- Footer -->
             <footer class="bg-white shadow mt-auto py-4">

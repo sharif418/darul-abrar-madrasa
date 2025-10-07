@@ -191,6 +191,40 @@ class ExamController extends Controller
     }
 
     /**
+     * Return exams available for marks entry (completed and not yet published) for a given class.
+     * Expects: class_id (required), subject_id (optional).
+     * Response: JSON { exams: [ {id, name, start_date, end_date} ] }
+     */
+    public function getExamsForMarksEntry(Request $request)
+    {
+        try {
+            $classId = (int) $request->get('class_id');
+            $subjectId = $request->get('subject_id'); // reserved for possible future filtering
+
+            if (!$classId) {
+                return response()->json(['exams' => [], 'message' => 'class_id is required'], 422);
+            }
+
+            $exams = Exam::where('class_id', $classId)
+                ->where('end_date', '<', now())
+                ->where('is_result_published', false)
+                ->orderByDesc('end_date')
+                ->get(['id', 'name', 'start_date', 'end_date']);
+
+            return response()->json(['exams' => $exams]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get exams for marks entry', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+                'class_id' => $request->get('class_id'),
+                'subject_id' => $request->get('subject_id'),
+            ]);
+
+            return response()->json(['exams' => [], 'message' => 'Failed to fetch exams'], 500);
+        }
+    }
+
+    /**
      * Publish the results for the specified exam.
      */
     public function publishResults(Exam $exam)

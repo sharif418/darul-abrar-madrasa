@@ -52,7 +52,7 @@
 
     <!-- Quick Actions -->
     <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <a href="{{ route('results.create-bulk') }}" class="rounded-xl p-4 gradient-blue text-white hover-lift">
+        <a href="{{ route('marks.create') }}" class="rounded-xl p-4 gradient-blue text-white hover-lift">
             <div class="flex flex-col items-center">
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
@@ -88,7 +88,7 @@
                 <div class="font-semibold text-sm text-center">View Results</div>
             </div>
         </a>
-        <a href="{{ route('lesson_plans.index') }}" class="rounded-xl p-4 gradient-yellow text-white hover-lift">
+        <a href="{{ route('lesson-plans.index') }}" class="rounded-xl p-4 gradient-yellow text-white hover-lift">
             <div class="flex flex-col items-center">
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
@@ -100,7 +100,7 @@
                 <div class="font-semibold text-sm text-center">View My Schedule</div>
             </div>
         </a>
-        <a href="{{ route('study_materials.create') }}" class="rounded-xl p-4 gradient-green text-white hover-lift">
+        <a href="{{ route('study-materials.create') }}" class="rounded-xl p-4 gradient-green text-white hover-lift">
             <div class="flex flex-col items-center">
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
@@ -112,7 +112,7 @@
                 <div class="font-semibold text-sm text-center">Upload Material</div>
             </div>
         </a>
-        <a href="{{ route('lesson_plans.create') }}" class="rounded-xl p-4 gradient-blue text-white hover-lift">
+        <a href="{{ route('lesson-plans.create') }}" class="rounded-xl p-4 gradient-blue text-white hover-lift">
             <div class="flex flex-col items-center">
                 <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none"
@@ -162,7 +162,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($assignedSubjects as $subject)
+                    @forelse($subjects as $subject)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="py-2 px-4 border-b border-gray-200">
                                 <div class="inline-flex items-center">
@@ -180,7 +180,7 @@
                             <td class="py-2 px-4 border-b border-gray-200">
                                 <div class="flex items-center gap-3">
                                     <a href="{{ route('attendances.index') }}" class="text-blue-600 hover:text-blue-800 text-sm">Take Attendance</a>
-                                    <a href="{{ route('results.create-bulk') }}" class="text-green-600 hover:text-green-800 text-sm">Enter Marks</a>
+                                    <a href="{{ route('marks.create') }}" class="text-green-600 hover:text-green-800 text-sm">Enter Marks</a>
                                     <a href="{{ route('students.index') }}" class="text-gray-700 hover:text-gray-900 text-sm">View Students</a>
                                 </div>
                             </td>

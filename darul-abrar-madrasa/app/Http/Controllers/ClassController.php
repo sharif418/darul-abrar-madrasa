@@ -6,8 +6,13 @@ use App\Http\Requests\StoreClassRequest;
 use App\Http\Requests\UpdateClassRequest;
 use App\Models\ClassRoom;
 use App\Models\Department;
+use App\Models\Student;
+use App\Models\Subject;
+use App\Models\Teacher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\EnrollStudentRequest;
+use App\Http\Requests\AssignSubjectRequest;
 
 class ClassController extends Controller
 {
@@ -205,6 +210,245 @@ class ClassController extends Controller
             ]);
 
             return back()->with('error', 'Failed to delete class. Please try again.');
+        }
+    }
+
+    /**
+     * Show the form for enrolling an existing student into this class.
+     */
+    public function showEnrollForm(Request $request, ClassRoom $class)
+    {
+        try {
+            $class->load(['department', 'students.user']);
+
+            $availableStudentsQuery = Student::where('is_active', true)
+                ->whereNotIn('id', $class->students->pluck('id'))
+                ->with(['user', 'class']);
+
+            if ($request->filled('search')) {
+                $search = $request->get('search');
+                $availableStudentsQuery->where(function ($q) use ($search) {
+                    $q->whereHas('user', function ($uq) use ($search) {
+                        $uq->where('name', 'like', "%{$search}%")
+                           ->orWhere('email', 'like', "%{$search}%");
+                    })->orWhere('admission_number', 'like', "%{$search}%");
+                });
+            }
+
+            $availableStudents = $availableStudentsQuery->orderByDesc('id')->paginate(20);
+
+            if ($class->isFull()) {
+                session()->flash('warning', 'This class has reached its maximum capacity.');
+            }
+
+            return view('classes.enroll-student', compact('class', 'availableStudents'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load enroll student form', [
+                'class_id' => $class->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to load enroll student form. Please try again.');
+        }
+    }
+
+    /**
+     * Enroll an existing student into this class.
+     */
+    public function enrollStudent(EnrollStudentRequest $request, ClassRoom $class)
+    {
+        try {
+            $data = $request->validated();
+
+            if ($class->isFull()) {
+                return back()->with('error', 'This class has reached its maximum capacity.');
+            }
+
+            $student = Student::findOrFail($data['student_id']);
+
+            if ((int)$student->class_id === (int)$class->id) {
+                return redirect()->route('classes.show', $class)
+                    ->with('info', 'The student is already enrolled in this class.');
+            }
+
+            $student->class_id = $class->id;
+            $student->save();
+
+            Log::info('Student enrolled into class', [
+                'class_id' => $class->id,
+                'student_id' => $student->id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->route('classes.show', $class)
+                ->with('success', 'Student enrolled successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to enroll student', [
+                'class_id' => $class->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'request' => $request->all(),
+            ]);
+
+            return back()->with('error', 'Failed to enroll student. Please try again.');
+        }
+    }
+
+    /**
+     * Show the form for assigning an existing subject or creating a new one for this class.
+     */
+    public function showAssignSubjectForm(ClassRoom $class)
+    {
+        try {
+            $class->load('department', 'subjects.teacher.user');
+
+            $availableSubjects = Subject::where('is_active', true)
+                ->whereNotIn('id', $class->subjects->pluck('id'))
+                ->whereDoesntHave('results')
+                ->with(['teacher.user', 'class'])
+                ->get();
+
+            $teachers = Teacher::where('is_active', true)->with('user')->get();
+
+            return view('classes.assign-subject', compact('class', 'availableSubjects', 'teachers'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load assign subject form', [
+                'class_id' => $class->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to load assign subject form. Please try again.');
+        }
+    }
+
+    /**
+     * Assign an existing subject or create a new subject for this class.
+     */
+    public function assignSubject(AssignSubjectRequest $request, ClassRoom $class)
+    {
+        try {
+            $data = $request->validated();
+
+            if (!empty($data['subject_id'])) {
+                // Assign existing subject to this class
+                $subject = Subject::findOrFail($data['subject_id']);
+
+                // Prevent reassigning a subject that already has results
+                if ($subject->results()->exists()) {
+                    return back()->with('error', 'Cannot reassign a subject that already has results.');
+                }
+
+                $subject->class_id = $class->id;
+                $subject->save();
+
+                Log::info('Existing subject assigned to class', [
+                    'class_id' => $class->id,
+                    'subject_id' => $subject->id,
+                    'user_id' => auth()->id(),
+                ]);
+            } else {
+                // Create new subject and assign to class
+                $subject = new Subject();
+                $subject->name = $data['name'];
+                $subject->code = $data['code'];
+                $subject->teacher_id = $data['teacher_id'];
+                $subject->full_mark = $data['full_mark'];
+                $subject->pass_mark = $data['pass_mark'];
+                $subject->description = $data['description'] ?? null;
+                $subject->is_active = true;
+                $subject->class_id = $class->id;
+                $subject->save();
+
+                Log::info('New subject created and assigned to class', [
+                    'class_id' => $class->id,
+                    'subject_id' => $subject->id,
+                    'user_id' => auth()->id(),
+                ]);
+            }
+
+            return redirect()->route('classes.show', $class)
+                ->with('success', 'Subject assigned successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to assign subject', [
+                'class_id' => $class->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'request' => $request->all(),
+            ]);
+
+            return back()->with('error', 'Failed to assign subject. Please try again.');
+        }
+    }
+
+    /**
+     * Unenroll a student from this class.
+     */
+    public function unenrollStudent(ClassRoom $class, Student $student)
+    {
+        try {
+            if ((int)$student->class_id !== (int)$class->id) {
+                return back()->with('error', 'The selected student does not belong to this class.');
+            }
+
+            // Business checks (fees, attendance, results) can be added as needed.
+
+            $student->class_id = null;
+            $student->save();
+
+            Log::info('Student unenrolled from class', [
+                'class_id' => $class->id,
+                'student_id' => $student->id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('success', 'Student unenrolled successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to unenroll student', [
+                'class_id' => $class->id,
+                'student_id' => $student->id ?? null,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to unenroll student. Please try again.');
+        }
+    }
+
+    /**
+     * Unassign a subject from this class.
+     */
+    public function unassignSubject(ClassRoom $class, Subject $subject)
+    {
+        try {
+            if ((int)$subject->class_id !== (int)$class->id) {
+                return back()->with('error', 'The selected subject does not belong to this class.');
+            }
+
+            if ($subject->results()->exists()) {
+                return back()->with('error', 'Cannot unassign subject with existing results.');
+            }
+
+            $subject->class_id = null;
+            $subject->save();
+
+            Log::info('Subject unassigned from class', [
+                'class_id' => $class->id,
+                'subject_id' => $subject->id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('success', 'Subject unassigned successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to unassign subject', [
+                'class_id' => $class->id,
+                'subject_id' => $subject->id ?? null,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to unassign subject. Please try again.');
         }
     }
 }
