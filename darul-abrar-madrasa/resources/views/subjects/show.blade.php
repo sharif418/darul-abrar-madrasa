@@ -113,9 +113,94 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-900">Enrolled Students ({{ $students->count() }})</h3>
                     @if(auth()->user()->role === 'admin' || auth()->user()->role === 'teacher')
-                    <a href="{{ route('results.create.bulk', ['exam_id' => 'latest', 'class_id' => $subject->class_id, 'subject_id' => $subject->id]) }}" class="text-blue-600 hover:text-blue-800 text-sm">
-                        + Enter Marks
-                    </a>
+                    <div x-data="enterMarksDropdown('{{ route('exams.for-marks-entry') }}', {{ (int) $subject->class_id }}, {{ (int) $subject->id }})" class="relative">
+                        <button type="button"
+                                @click="toggle()"
+                                class="text-blue-600 hover:text-blue-800 text-sm inline-flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Enter Marks
+                        </button>
+                        <div x-cloak x-show="open"
+                             @click.away="open = false"
+                             x-transition
+                             class="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                            <div class="px-3 py-2 border-b text-sm font-semibold text-gray-700">
+                                Select Exam
+                            </div>
+                            <div x-show="loading" class="p-3 text-sm text-gray-500">
+                                Loading exams...
+                            </div>
+                            <template x-if="!loading && exams.length === 0">
+                                <div class="p-3 text-sm text-gray-500">
+                                    No exams available for marks entry. Create an exam first.
+                                </div>
+                            </template>
+                            <ul class="max-h-64 overflow-auto" x-show="!loading && exams.length > 0">
+                                <template x-for="exam in exams" :key="exam.id">
+                                    <li>
+                                        <a :href="buildResultUrl(exam.id)"
+                                           class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <span class="font-medium" x-text="exam.name"></span>
+                                            <span class="block text-xs text-gray-500" x-text="formatDateRange(exam.start_date, exam.end_date)"></span>
+                                        </a>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </div>
+                    <script>
+                        function enterMarksDropdown(apiUrl, classId, subjectId) {
+                            return {
+                                open: false,
+                                loading: false,
+                                exams: [],
+                                async toggle() {
+                                    this.open = !this.open;
+                                    if (this.open && this.exams.length === 0) {
+                                        await this.fetchExams();
+                                    }
+                                },
+                                async fetchExams() {
+                                    try {
+                                        this.loading = true;
+                                        const url = new URL(apiUrl, window.location.origin);
+                                        url.searchParams.set('class_id', classId);
+                                        url.searchParams.set('subject_id', subjectId);
+                                        const res = await fetch(url.toString(), {
+                                            headers: {
+                                                'X-Requested-With': 'XMLHttpRequest',
+                                                'Accept': 'application/json',
+                                            }
+                                        });
+                                        if (!res.ok) throw new Error('Network error');
+                                        const data = await res.json();
+                                        this.exams = data.exams || [];
+                                    } catch (e) {
+                                        window.showToast && window.showToast('Failed to load exams list', 'error');
+                                        this.exams = [];
+                                    } finally {
+                                        this.loading = false;
+                                    }
+                                },
+                                buildResultUrl(examId) {
+                                    const base = "{{ route('results.create.bulk', ['exam_id' => 'EXAM_ID', 'class_id' => $subject->class_id, 'subject_id' => $subject->id]) }}";
+                                    return base.replace('EXAM_ID', examId);
+                                },
+                                formatDateRange(start, end) {
+                                    try {
+                                        const s = new Date(start);
+                                        const e = new Date(end);
+                                        const opts = { month: 'short', day: 'numeric', year: 'numeric' };
+                                        return `${s.toLocaleDateString(undefined, opts)} - ${e.toLocaleDateString(undefined, opts)}`;
+                                    } catch {
+                                        return '';
+                                    }
+                                }
+                            }
+                        }
+                    </script>
                     @endif
                 </div>
 

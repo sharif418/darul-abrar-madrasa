@@ -70,7 +70,21 @@
                     </div>
                 @endif
                 
-                @if($status === 'completed' && !$exam->is_result_published)
+                @php
+                    // Determine if all subjects have complete results for all students
+                    $studentsCount = $exam->class->students()->count();
+                    $totalSubjects = $subjects->count();
+                    $completedSubjects = 0;
+                    foreach ($subjects as $s) {
+                        $c = $exam->results()->where('subject_id', $s->id)->count();
+                        if ($c >= $studentsCount && $studentsCount > 0) {
+                            $completedSubjects++;
+                        }
+                    }
+                    $allComplete = ($totalSubjects > 0) && ($completedSubjects === $totalSubjects);
+                @endphp
+
+                @if($status === 'completed' && !$exam->is_result_published && $allComplete)
                     <div class="mt-6">
                         <form action="{{ route('exams.publish-results', $exam->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to publish the results? This action cannot be undone.');">
                             @csrf
@@ -80,6 +94,15 @@
                             </button>
                         </form>
                     </div>
+                @elseif($status === 'completed' && !$exam->is_result_published && !$allComplete)
+                    <div class="mt-6">
+                        <button type="button" class="w-full bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded cursor-not-allowed" title="Results are incomplete across subjects">
+                            Publish Results (Disabled - Incomplete)
+                        </button>
+                        <p class="mt-2 text-xs text-gray-600">
+                            Results entered for {{ $completedSubjects }}/{{ $totalSubjects }} subjects. All subjects must be complete before publishing.
+                        </p>
+                    </div>
                 @endif
             </div>
         </div>
@@ -88,6 +111,30 @@
         <div class="bg-white shadow-md rounded-lg overflow-hidden md:col-span-2">
             <div class="p-6">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">Subjects and Schedule</h2>
+
+                @php
+                    $studentsCount = $exam->class->students()->count();
+                    $totalSubjects = $subjects->count();
+                    $completedSubjects = 0;
+                    foreach ($subjects as $s) {
+                        $c = $exam->results()->where('subject_id', $s->id)->count();
+                        if ($c >= $studentsCount && $studentsCount > 0) {
+                            $completedSubjects++;
+                        }
+                    }
+                    $completionPercent = $totalSubjects > 0 ? round(($completedSubjects / $totalSubjects) * 100) : 0;
+                @endphp
+
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="text-sm text-gray-700">
+                            Results completion: {{ $completedSubjects }}/{{ $totalSubjects }} subjects ({{ $completionPercent }}%)
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: {{ $completionPercent }}%;"></div>
+                    </div>
+                </div>
                 
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white border">
@@ -98,17 +145,36 @@
                                 <th class="py-2 px-4 border">Teacher</th>
                                 <th class="py-2 px-4 border">Full Mark</th>
                                 <th class="py-2 px-4 border">Pass Mark</th>
+                                <th class="py-2 px-4 border">Status</th>
                                 <th class="py-2 px-4 border">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($subjects as $subject)
+                                @php
+                                    $resCount = $exam->results()->where('subject_id', $subject->id)->count();
+                                    if ($resCount === 0) {
+                                        $statusLabel = 'None';
+                                        $statusClass = 'bg-red-100 text-red-800';
+                                    } elseif ($resCount < $studentsCount) {
+                                        $statusLabel = 'Partial';
+                                        $statusClass = 'bg-yellow-100 text-yellow-800';
+                                    } else {
+                                        $statusLabel = 'Complete';
+                                        $statusClass = 'bg-green-100 text-green-800';
+                                    }
+                                @endphp
                                 <tr>
                                     <td class="py-2 px-4 border">{{ $subject->name }}</td>
                                     <td class="py-2 px-4 border">{{ $subject->code }}</td>
                                     <td class="py-2 px-4 border">{{ $subject->teacher ? $subject->teacher->user->name : 'Not Assigned' }}</td>
                                     <td class="py-2 px-4 border">{{ $subject->full_mark }}</td>
                                     <td class="py-2 px-4 border">{{ $subject->pass_mark }}</td>
+                                    <td class="py-2 px-4 border">
+                                        <span class="px-2 py-1 rounded-full text-xs {{ $statusClass }}">
+                                            {{ $statusLabel }} ({{ $resCount }}/{{ $studentsCount }})
+                                        </span>
+                                    </td>
                                     <td class="py-2 px-4 border">
                                         @if($status === 'completed' && !$exam->is_result_published)
                                             <a href="{{ route('results.create.bulk', ['exam_id' => $exam->id, 'class_id' => $exam->class_id, 'subject_id' => $subject->id]) }}" class="text-blue-600 hover:text-blue-800">
@@ -125,7 +191,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="py-4 px-4 border text-center text-gray-500">No subjects found for this class</td>
+                                    <td colspan="7" class="py-4 px-4 border text-center text-gray-500">No subjects found for this class</td>
                                 </tr>
                             @endforelse
                         </tbody>

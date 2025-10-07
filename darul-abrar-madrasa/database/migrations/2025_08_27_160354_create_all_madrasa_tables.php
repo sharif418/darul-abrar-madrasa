@@ -73,7 +73,8 @@ return new class extends Migration
             $table->foreignId('department_id')->constrained()->onDelete('cascade');
             $table->string('designation');
             $table->string('qualification');
-            $table->string('phone', 15);
+            // Phone is stored on users table in current architecture; keep teacher.phone nullable to avoid constraint issues
+            $table->string('phone', 15)->nullable();
             $table->string('address');
             $table->date('joining_date');
             $table->decimal('salary', 10, 2)->default(0);
@@ -168,6 +169,9 @@ return new class extends Migration
             $table->foreignId('subject_id')->constrained()->onDelete('cascade');
             $table->decimal('marks_obtained', 5, 2);
             $table->string('grade')->nullable();
+            // Added to support model calculations
+            $table->decimal('gpa_point', 3, 2)->default(0);
+            $table->boolean('is_passed')->default(false);
             $table->text('remarks')->nullable();
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();

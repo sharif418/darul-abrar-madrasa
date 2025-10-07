@@ -5,6 +5,29 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Class Exam
+ * 
+ * @property int $id
+ * @property string $name
+ * @property int $class_id
+ * @property \Carbon\Carbon $start_date
+ * @property \Carbon\Carbon $end_date
+ * @property string|null $description
+ * @property bool $is_active
+ * @property bool $is_result_published
+ * @property float|null $pass_gpa
+ * @property int|null $fail_limit
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * 
+ * @property-read ClassRoom $class
+ * @property-read \Illuminate\Database\Eloquent\Collection|Result[] $results
+ * @property-read bool $is_ongoing
+ * @property-read bool $is_upcoming
+ * @property-read bool $is_completed
+ * @property-read int $duration
+ */
 class Exam extends Model
 {
     use HasFactory;
@@ -42,6 +65,8 @@ class Exam extends Model
 
     /**
      * Get the class that owns the exam.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function class()
     {
@@ -50,6 +75,8 @@ class Exam extends Model
 
     /**
      * Get the results for the exam.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function results()
     {
@@ -57,7 +84,33 @@ class Exam extends Model
     }
 
     /**
+     * Scope a query to filter by class.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int $classId
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeForClass($query, $classId)
+    {
+        return $query->where('class_id', $classId);
+    }
+
+    /**
+     * Scope a query to search by name.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $search
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeSearch($query, $search)
+    {
+        return $query->where('name', 'like', "%{$search}%");
+    }
+
+    /**
      * Check if the exam is ongoing.
+     *
+     * @return bool
      */
     public function getIsOngoingAttribute()
     {
@@ -67,6 +120,8 @@ class Exam extends Model
 
     /**
      * Check if the exam is upcoming.
+     *
+     * @return bool
      */
     public function getIsUpcomingAttribute()
     {
@@ -75,6 +130,8 @@ class Exam extends Model
 
     /**
      * Check if the exam is completed.
+     *
+     * @return bool
      */
     public function getIsCompletedAttribute()
     {
@@ -83,6 +140,8 @@ class Exam extends Model
 
     /**
      * Get the duration of the exam in days.
+     *
+     * @return int
      */
     public function getDurationAttribute()
     {
@@ -91,6 +150,9 @@ class Exam extends Model
 
     /**
      * Scope a query to only include active exams.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
     {
@@ -99,6 +161,9 @@ class Exam extends Model
 
     /**
      * Scope a query to only include exams with published results.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePublishedResults($query)
     {
@@ -107,6 +172,9 @@ class Exam extends Model
 
     /**
      * Scope a query to only include ongoing exams.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOngoing($query)
     {
@@ -117,6 +185,9 @@ class Exam extends Model
 
     /**
      * Scope a query to only include upcoming exams.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUpcoming($query)
     {
@@ -125,10 +196,71 @@ class Exam extends Model
 
     /**
      * Scope a query to only include completed exams.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCompleted($query)
     {
         return $query->where('end_date', '<', now());
+    }
+
+    /**
+     * Check if results can be published.
+     *
+     * @return bool
+     */
+    public function canPublishResults()
+    {
+        // Exam must be completed
+        if (!$this->is_completed) {
+            return false;
+        }
+
+        // Check if all students have results for all subjects
+        $classId = $this->class_id;
+        $examId = $this->id;
+        
+        $studentsCount = Student::where('class_id', $classId)->where('is_active', true)->count();
+        $subjectsCount = Subject::where('class_id', $classId)->where('is_active', true)->count();
+        
+        $expectedResultsCount = $studentsCount * $subjectsCount;
+        $actualResultsCount = Result::where('exam_id', $examId)->count();
+        
+        return $actualResultsCount >= $expectedResultsCount;
+    }
+
+    /**
+     * Check if results can be edited.
+     *
+     * @return bool
+     */
+    public function canEditResults()
+    {
+        return !$this->is_result_published;
+    }
+
+    /**
+     * Get results completion percentage.
+     *
+     * @return float
+     */
+    public function getResultsCompletionPercentage()
+    {
+        $classId = $this->class_id;
+        $examId = $this->id;
+        
+        $studentsCount = Student::where('class_id', $classId)->where('is_active', true)->count();
+        $subjectsCount = Subject::where('class_id', $classId)->where('is_active', true)->count();
+        
+        if ($studentsCount == 0 || $subjectsCount == 0) {
+            return 0;
+        }
+        
+        $expectedResultsCount = $studentsCount * $subjectsCount;
+        $actualResultsCount = Result::where('exam_id', $examId)->count();
+        
+        return ($actualResultsCount / $expectedResultsCount) * 100;
     }
     
     /**

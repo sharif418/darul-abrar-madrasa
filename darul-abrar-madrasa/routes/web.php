@@ -18,7 +18,12 @@ use App\Http\Controllers\StudyMaterialController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\GradingScaleController;
+use App\Http\Controllers\LessonPlanController;
 use Illuminate\Support\Facades\Route;
+
+// Constrain {notice} route parameter to numeric IDs to avoid conflicts with '/notices/public'
+Route::pattern('notice', '[0-9]+');
 
 /*
 |--------------------------------------------------------------------------
@@ -67,15 +72,31 @@ Route::middleware(['auth'])->group(function () {
         
         // Class management
         Route::resource('classes', ClassController::class);
+        Route::get('/classes/{class}/enroll-student', [ClassController::class, 'showEnrollForm'])->name('classes.enroll-student.form');
+        Route::post('/classes/{class}/enroll-student', [ClassController::class, 'enrollStudent'])->name('classes.enroll-student');
+        Route::get('/classes/{class}/assign-subject', [ClassController::class, 'showAssignSubjectForm'])->name('classes.assign-subject.form');
+        Route::post('/classes/{class}/assign-subject', [ClassController::class, 'assignSubject'])->name('classes.assign-subject');
+        Route::delete('/classes/{class}/students/{student}', [ClassController::class, 'unenrollStudent'])->name('classes.unenroll-student');
+        Route::delete('/classes/{class}/subjects/{subject}', [ClassController::class, 'unassignSubject'])->name('classes.unassign-subject');
         
         // Teacher management
         Route::resource('teachers', TeacherController::class);
         
         // Student management
         Route::resource('students', StudentController::class);
+        Route::post('/students/bulk-promote', [StudentController::class, 'bulkPromote'])->name('students.bulk-promote');
+        Route::post('/students/bulk-transfer', [StudentController::class, 'bulkTransfer'])->name('students.bulk-transfer');
+        Route::post('/students/bulk-status', [StudentController::class, 'bulkStatusUpdate'])->name('students.bulk-status');
         
         // Subject management
         Route::resource('subjects', SubjectController::class);
+
+        // Grading Scale management
+        Route::resource('grading-scales', GradingScaleController::class);
+Route::patch('/grading-scales/{gradingScale}/toggle-active', [GradingScaleController::class, 'toggleActive'])->name('grading-scales.toggle-active');
+
+        // Lesson Plan management
+        Route::resource('lesson-plans', LessonPlanController::class);
         
         // Exam management
         Route::resource('exams', ExamController::class);
@@ -102,13 +123,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/attendances/create/{class_id}', [AttendanceController::class, 'createByClass'])->name('attendances.create.class');
         Route::post('/attendances/store-bulk', [AttendanceController::class, 'storeBulk'])->name('attendances.store.bulk');
         
-        // Result management
-        Route::get('/results/create/{exam_id}/{class_id}/{subject_id}', [ResultController::class, 'createBulk'])->name('results.create.bulk');
-        Route::post('/results/store-bulk', [ResultController::class, 'storeBulk'])->name('results.store.bulk');
-        
-        // Marks Entry
-        Route::get('/marks/create', [ResultController::class, 'createMarks'])->name('marks.create');
-        Route::post('/marks/store', [ResultController::class, 'storeMarks'])->name('marks.store');
+        // Marks Entry moved to admin+teacher group
     });
     
     // Common routes for teachers and admin
@@ -118,6 +133,18 @@ Route::middleware(['auth'])->group(function () {
         
         // Result management
         Route::resource('results', ResultController::class);
+        Route::get('/results/{exam}/class-summary/pdf', [ResultController::class, 'generateClassResultSummary'])->name('results.class-summary.pdf');
+        Route::get('/results/create/{exam_id}/{class_id}/{subject_id}', [ResultController::class, 'createBulk'])->name('results.create.bulk');
+        Route::post('/results/store-bulk', [ResultController::class, 'storeBulk'])->name('results.store.bulk');
+        Route::get('/exams/for-marks-entry', [ExamController::class, 'getExamsForMarksEntry'])->name('exams.for-marks-entry');
+
+        // Marks Entry
+        Route::get('/marks/create', [ResultController::class, 'createMarks'])->name('marks.create');
+        Route::post('/marks/store', [ResultController::class, 'storeMarks'])->name('marks.store');
+
+        // Study materials management
+        Route::resource('study-materials', StudyMaterialController::class);
+        Route::patch('/study-materials/{studyMaterial}/toggle-published', [StudyMaterialController::class, 'togglePublished'])->name('study-materials.toggle-published');
     });
     
     // Student routes
@@ -127,7 +154,7 @@ Route::middleware(['auth'])->group(function () {
         
         // View own results
         Route::get('/my-results', [ResultController::class, 'myResults'])->name('my.results');
-        Route::get('/results/download/{exam}', [ResultController::class, 'downloadResult'])->name('results.download');
+        Route::get('/results/{exam}/{student}/mark-sheet', [ResultController::class, 'generateMarkSheet'])->name('results.mark-sheet');
         
         // View own fees
         Route::get('/my-fees', [FeeController::class, 'myFees'])->name('my.fees');
@@ -136,6 +163,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/my-materials', [StudyMaterialController::class, 'myMaterials'])->name('my.materials');
     });
     
+    // Study materials download - accessible to all authenticated users
+    Route::get('/study-materials/{studyMaterial}/download', [StudyMaterialController::class, 'download'])->name('study-materials.download');
+
     // Common routes for all authenticated users
     Route::get('/notices/public', [NoticeController::class, 'publicNotices'])->name('notices.public');
 });

@@ -2,74 +2,54 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreAttendanceRequest;
 use App\Models\Attendance;
 use App\Models\ClassRoom;
 use App\Models\Student;
+use App\Repositories\AttendanceRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
 {
+    protected $attendanceRepository;
+
+    public function __construct(AttendanceRepository $attendanceRepository)
+    {
+        $this->attendanceRepository = $attendanceRepository;
+    }
+
     /**
      * Display a listing of the attendance records.
      */
     public function index(Request $request)
     {
-        $query = Attendance::with(['student.user', 'class', 'markedBy']);
+        try {
+            $filters = [
+                'class_id' => $request->class_id,
+                'date' => $request->date,
+                'status' => $request->status,
+            ];
 
-        // Apply filters
-        if ($request->filled('class_id')) {
-            $query->where('class_id', $request->class_id);
+            $attendances = $this->attendanceRepository->getAllWithFilters($filters, 15);
+            $classes = ClassRoom::with('department')->get();
+
+            // Calculate attendance summary if class and date are provided
+            $summary = null;
+            if ($request->filled('class_id') && $request->filled('date')) {
+                $summary = $this->attendanceRepository->getSummary($request->class_id, $request->date);
+            }
+
+            return view('attendances.index', compact('attendances', 'classes', 'summary'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load attendance records', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
+
+            return back()->with('error', 'Failed to load attendance records. Please try again.');
         }
-
-        if ($request->filled('date')) {
-            $query->whereDate('date', $request->date);
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $attendances = $query->latest()->paginate(15);
-        $classes = ClassRoom::with('department')->get();
-
-        // Calculate attendance summary if class and date are provided
-        $presentCount = 0;
-        $absentCount = 0;
-        $lateCount = 0;
-        $leaveCount = 0;
-
-        if ($request->filled('class_id') && $request->filled('date')) {
-            $presentCount = Attendance::where('class_id', $request->class_id)
-                ->whereDate('date', $request->date)
-                ->where('status', 'present')
-                ->count();
-                
-            $absentCount = Attendance::where('class_id', $request->class_id)
-                ->whereDate('date', $request->date)
-                ->where('status', 'absent')
-                ->count();
-                
-            $lateCount = Attendance::where('class_id', $request->class_id)
-                ->whereDate('date', $request->date)
-                ->where('status', 'late')
-                ->count();
-                
-            $leaveCount = Attendance::where('class_id', $request->class_id)
-                ->whereDate('date', $request->date)
-                ->where('status', 'leave')
-                ->count();
-        }
-
-        return view('attendances.index', compact(
-            'attendances', 
-            'classes', 
-            'presentCount', 
-            'absentCount', 
-            'lateCount', 
-            'leaveCount'
-        ));
     }
 
     /**
@@ -86,82 +66,78 @@ class AttendanceController extends Controller
      */
     public function createByClass($class_id)
     {
-        $class = ClassRoom::with('department')->findOrFail($class_id);
-        $students = Student::where('class_id', $class_id)
-            ->where('is_active', true)
-            ->with('user')
-            ->get();
-        $date = now();
+        try {
+            $class = ClassRoom::with('department')->findOrFail($class_id);
+            $students = Student::where('class_id', $class_id)
+                ->where('is_active', true)
+                ->with('user')
+                ->get();
+            $date = now();
 
-        // Check if attendance already taken for today
-        $existingCount = Attendance::where('class_id', $class_id)
-            ->whereDate('date', $date)
-            ->count();
+            // Check if attendance already taken for today
+            $existingCount = $this->attendanceRepository->checkExisting($class_id, $date->format('Y-m-d'));
 
-        if ($existingCount > 0) {
-            return redirect()->route('attendances.index', ['class_id' => $class_id, 'date' => $date->format('Y-m-d')])
-                ->with('info', 'Attendance for this class has already been taken today. You can edit the existing records.');
+            if ($existingCount > 0) {
+                return redirect()->route('attendances.index', [
+                    'class_id' => $class_id, 
+                    'date' => $date->format('Y-m-d')
+                ])->with('info', 'Attendance for this class has already been taken today. You can edit the existing records.');
+            }
+
+            return view('attendances.create', compact('class', 'students', 'date'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load attendance form', [
+                'class_id' => $class_id,
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
+
+            return back()->with('error', 'Failed to load attendance form. Please try again.');
         }
-
-        return view('attendances.create', compact('class', 'students', 'date'));
     }
 
     /**
      * Store multiple attendance records in storage.
      */
-    public function storeBulk(Request $request)
+    public function storeBulk(StoreAttendanceRequest $request)
     {
-        $request->validate([
-            'class_id' => 'required|exists:classes,id',
-            'date' => 'required|date',
-            'student_ids' => 'required|array',
-            'student_ids.*' => 'exists:students,id',
-            'status' => 'required|array',
-            'status.*' => 'in:present,absent,late,leave,half_day',
-        ]);
-
-        DB::beginTransaction();
-
         try {
-            $class_id = $request->class_id;
-            $date = $request->date;
-            $student_ids = $request->student_ids;
-            $statuses = $request->status;
-            $remarks = $request->remarks ?? [];
-
-            foreach ($student_ids as $student_id) {
-                // Check if attendance already exists for this student on this date
-                $existingAttendance = Attendance::where('student_id', $student_id)
-                    ->whereDate('date', $date)
-                    ->first();
-
-                if ($existingAttendance) {
-                    // Update existing attendance
-                    $existingAttendance->update([
-                        'status' => $statuses[$student_id] ?? 'absent',
-                        'remarks' => $remarks[$student_id] ?? null,
-                        'marked_by' => Auth::id(),
-                    ]);
-                } else {
-                    // Create new attendance record
-                    Attendance::create([
-                        'student_id' => $student_id,
-                        'class_id' => $class_id,
-                        'date' => $date,
-                        'status' => $statuses[$student_id] ?? 'absent',
-                        'remarks' => $remarks[$student_id] ?? null,
-                        'marked_by' => Auth::id(),
-                    ]);
-                }
+            $validated = $request->validated();
+            
+            $studentData = [];
+            foreach ($validated['student_ids'] as $student_id) {
+                $studentData[$student_id] = [
+                    'status' => $validated['status'][$student_id] ?? 'absent',
+                    'remarks' => $validated['remarks'][$student_id] ?? null,
+                ];
             }
 
-            DB::commit();
+            $count = $this->attendanceRepository->storeBulk(
+                $validated['class_id'],
+                $validated['date'],
+                $studentData,
+                Auth::id()
+            );
 
-            return redirect()->route('attendances.index', ['class_id' => $class_id, 'date' => $date])
-                ->with('success', 'Attendance records saved successfully.');
+            Log::info('Bulk attendance records saved', [
+                'class_id' => $validated['class_id'],
+                'date' => $validated['date'],
+                'count' => $count,
+                'user_id' => Auth::id(),
+            ]);
+
+            return redirect()->route('attendances.index', [
+                'class_id' => $validated['class_id'], 
+                'date' => $validated['date']
+            ])->with('success', "Attendance records saved successfully. {$count} records processed.");
         } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Failed to save attendance records. ' . $e->getMessage());
+            Log::error('Failed to save bulk attendance', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+                'data' => $request->validated(),
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to save attendance records. Please try again.');
         }
     }
 
@@ -170,8 +146,18 @@ class AttendanceController extends Controller
      */
     public function show(Attendance $attendance)
     {
-        $attendance->load(['student.user', 'class', 'markedBy']);
-        return view('attendances.show', compact('attendance'));
+        try {
+            $attendance->load(['student.user', 'class', 'markedBy']);
+            return view('attendances.show', compact('attendance'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load attendance details', [
+                'attendance_id' => $attendance->id,
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
+
+            return back()->with('error', 'Failed to load attendance details. Please try again.');
+        }
     }
 
     /**
@@ -193,14 +179,33 @@ class AttendanceController extends Controller
             'remarks' => 'nullable|string|max:255',
         ]);
 
-        $attendance->update([
-            'status' => $request->status,
-            'remarks' => $request->remarks,
-            'marked_by' => Auth::id(),
-        ]);
+        try {
+            $data = [
+                'status' => $request->status,
+                'remarks' => $request->remarks,
+                'marked_by' => Auth::id(),
+            ];
 
-        return redirect()->route('attendances.index', ['class_id' => $attendance->class_id, 'date' => $attendance->date->format('Y-m-d')])
-            ->with('success', 'Attendance record updated successfully.');
+            $this->attendanceRepository->update($attendance, $data);
+
+            Log::info('Attendance record updated', [
+                'attendance_id' => $attendance->id,
+                'user_id' => Auth::id(),
+            ]);
+
+            return redirect()->route('attendances.index', [
+                'class_id' => $attendance->class_id, 
+                'date' => $attendance->date->format('Y-m-d')
+            ])->with('success', 'Attendance record updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to update attendance', [
+                'attendance_id' => $attendance->id,
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to update attendance record. Please try again.');
+        }
     }
 
     /**
@@ -208,13 +213,31 @@ class AttendanceController extends Controller
      */
     public function destroy(Attendance $attendance)
     {
-        $class_id = $attendance->class_id;
-        $date = $attendance->date->format('Y-m-d');
-        
-        $attendance->delete();
+        try {
+            $class_id = $attendance->class_id;
+            $date = $attendance->date->format('Y-m-d');
+            $attendanceId = $attendance->id;
+            
+            $attendance->delete();
 
-        return redirect()->route('attendances.index', ['class_id' => $class_id, 'date' => $date])
-            ->with('success', 'Attendance record deleted successfully.');
+            Log::info('Attendance record deleted', [
+                'attendance_id' => $attendanceId,
+                'user_id' => Auth::id(),
+            ]);
+
+            return redirect()->route('attendances.index', [
+                'class_id' => $class_id, 
+                'date' => $date
+            ])->with('success', 'Attendance record deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to delete attendance', [
+                'attendance_id' => $attendance->id,
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
+
+            return back()->with('error', 'Failed to delete attendance record. Please try again.');
+        }
     }
 
     /**
@@ -222,51 +245,36 @@ class AttendanceController extends Controller
      */
     public function myAttendance(Request $request)
     {
-        $student = Auth::user()->student;
-        
-        if (!$student) {
-            abort(403, 'You are not registered as a student.');
-        }
+        try {
+            $student = Auth::user()->student;
+            
+            if (!$student) {
+                abort(403, 'You are not registered as a student.');
+            }
 
-        // Get month and year from request or use current month/year
-        $month = $request->input('month', date('n'));
-        $year = $request->input('year', date('Y'));
-        
-        // Get attendance records for the selected month
-        $query = Attendance::where('student_id', $student->id)
-            ->whereYear('date', $year)
-            ->whereMonth('date', $month)
-            ->with('markedBy');
+            // Get month and year from request or use current month/year
+            $month = $request->input('month', date('n'));
+            $year = $request->input('year', date('Y'));
             
-        $attendances = $query->orderBy('date', 'desc')->paginate(31);
-        
-        // Calculate attendance statistics
-        $presentCount = Attendance::where('student_id', $student->id)
-            ->where('status', 'present')
-            ->count();
+            // Get attendance records for the selected month
+            $attendances = $this->attendanceRepository->getStudentAttendance(
+                $student->id, 
+                $month, 
+                $year, 
+                31
+            );
             
-        $absentCount = Attendance::where('student_id', $student->id)
-            ->where('status', 'absent')
-            ->count();
+            // Calculate attendance statistics
+            $stats = $this->attendanceRepository->getStudentStats($student->id);
             
-        $lateCount = Attendance::where('student_id', $student->id)
-            ->where('status', 'late')
-            ->count();
-            
-        $leaveCount = Attendance::where('student_id', $student->id)
-            ->where('status', 'leave')
-            ->count();
-            
-        $totalAttendance = $presentCount + $absentCount + $lateCount + $leaveCount;
-        $attendanceRate = $totalAttendance > 0 ? round(($presentCount / $totalAttendance) * 100) : 0;
-        
-        return view('attendances.my-attendance', compact(
-            'attendances',
-            'presentCount',
-            'absentCount',
-            'lateCount',
-            'leaveCount',
-            'attendanceRate'
-        ));
+            return view('attendances.my-attendance', compact('attendances', 'stats', 'month', 'year'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load student attendance', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
+
+            return back()->with('error', 'Failed to load your attendance records. Please try again.');
+        }
     }
 }
