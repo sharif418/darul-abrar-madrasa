@@ -226,8 +226,8 @@
             </a>
         </div>
 
-        <!-- System Health -->
-        <a href="{{ route('admin.system-health') }}" 
+        {{-- System Health - Temporarily disabled for debugging --}}
+        {{-- <a href="{{ route('admin.system-health') }}" 
            class="nav-item {{ request()->routeIs('admin.system-health*') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
             <span class="inline-flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,7 +236,7 @@
                 </svg>
                 System Health
             </span>
-        </a>
+        </a> --}}
 
         <!-- Public Notices -->
         <a href="{{ route('notices.public') }}" class="{{ request()->routeIs('notices.public') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
