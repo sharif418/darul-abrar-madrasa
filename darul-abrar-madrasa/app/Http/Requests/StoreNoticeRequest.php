@@ -26,7 +26,7 @@ class StoreNoticeRequest extends FormRequest
             'description' => ['required', 'string'],
             'publish_date' => ['required', 'date'],
             'expiry_date' => ['nullable', 'date', 'after:publish_date'],
-            'notice_for' => ['required', 'in:all,students,teachers,staff'],
+            'notice_for' => ['required', 'in:all,students,teachers,staff,guardians'],
             'is_active' => ['boolean'],
         ];
     }
@@ -47,7 +47,7 @@ class StoreNoticeRequest extends FormRequest
             'expiry_date.date' => 'Please provide a valid expiry date.',
             'expiry_date.after' => 'Expiry date must be after publish date.',
             'notice_for.required' => 'Please select target audience.',
-            'notice_for.in' => 'Invalid target audience selected.',
+            'notice_for.in' => 'Target audience must be one of: All, Students, Teachers, Staff, or Guardians.',
         ];
     }
 

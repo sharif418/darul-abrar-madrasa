@@ -1,0 +1,40 @@
+==========================================
+🧪 Testing Login and Dashboard Access
+==========================================
+
+1. Getting CSRF token from login page...
+   CSRF Token: DvwqxYXZ3KaucTlcwsz2...
+
+2. Attempting login with admin credentials...
+   HTTP Response Code: 405
+
+3. Accessing dashboard...
+   Dashboard HTTP Code: 200
+
+✅ Dashboard loaded successfully!
+
+Dashboard content preview:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="nm0OBwpZOyGPyDb7j6ZO44R12Vo0mSNfDNWnbLGL">
+
+    <title>Darul Abrar Madrasa</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+
+    <!-- Scripts -->
+    <link rel="preload" as="style" href="https://darulabrar.ailearnersbd.com/build/assets/app-CV_ZOty0.css" /><link rel="modulepreload" as="script" href="https://darulabrar.ailearnersbd.com/build/assets/app-B0Xdidij.js" /><link rel="stylesheet" href="https://darulabrar.ailearnersbd.com/build/assets/app-CV_ZOty0.css" data-navigate-track="reload" /><script type="module" src="https://darulabrar.ailearnersbd.com/build/assets/app-B0Xdidij.js" data-navigate-track="reload"></script>    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+==========================================
+Test Complete
+==========================================

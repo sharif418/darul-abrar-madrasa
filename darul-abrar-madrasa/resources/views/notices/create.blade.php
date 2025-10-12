@@ -38,11 +38,12 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Notice For</label>
                     <select name="notice_for" required
                             class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        <option value="all" {{ old('notice_for') === 'all' ? 'selected' : '' }}>All</option>
-                        <option value="students" {{ old('notice_for') === 'students' ? 'selected' : '' }}>Students</option>
-                        <option value="teachers" {{ old('notice_for') === 'teachers' ? 'selected' : '' }}>Teachers</option>
-                        <option value="staff" {{ old('notice_for') === 'staff' ? 'selected' : '' }}>Staff</option>
-                    </select>
+                    <option value="all" {{ old('notice_for') === 'all' ? 'selected' : '' }}>All</option>
+                    <option value="students" {{ old('notice_for') === 'students' ? 'selected' : '' }}>Students</option>
+                    <option value="teachers" {{ old('notice_for') === 'teachers' ? 'selected' : '' }}>Teachers</option>
+                    <option value="staff" {{ old('notice_for') === 'staff' ? 'selected' : '' }}>Staff</option>
+                    <option value="guardians" {{ old('notice_for') === 'guardians' ? 'selected' : '' }}>Guardians</option>
+                </select>
                 </div>
 
                 <div>

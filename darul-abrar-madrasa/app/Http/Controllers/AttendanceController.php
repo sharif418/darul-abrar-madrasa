@@ -25,6 +25,7 @@ class AttendanceController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorize('viewAny', \App\Models\Attendance::class);
         try {
             $filters = [
                 'class_id' => $request->class_id,
@@ -57,6 +58,7 @@ class AttendanceController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', \App\Models\Attendance::class);
         $classes = ClassRoom::with('department')->get();
         return view('attendances.select-class', compact('classes'));
     }
@@ -66,6 +68,7 @@ class AttendanceController extends Controller
      */
     public function createByClass($class_id)
     {
+        $this->authorize('createForClass', [\App\Models\Attendance::class, (int) $class_id]);
         try {
             $class = ClassRoom::with('department')->findOrFail($class_id);
             $students = Student::where('class_id', $class_id)
@@ -103,6 +106,7 @@ class AttendanceController extends Controller
     {
         try {
             $validated = $request->validated();
+            $this->authorize('createForClass', [\App\Models\Attendance::class, (int) $validated['class_id']]);
             
             $studentData = [];
             foreach ($validated['student_ids'] as $student_id) {
@@ -146,6 +150,7 @@ class AttendanceController extends Controller
      */
     public function show(Attendance $attendance)
     {
+        $this->authorize('view', $attendance);
         try {
             $attendance->load(['student.user', 'class', 'markedBy']);
             return view('attendances.show', compact('attendance'));
@@ -165,6 +170,7 @@ class AttendanceController extends Controller
      */
     public function edit(Attendance $attendance)
     {
+        $this->authorize('update', $attendance);
         $attendance->load(['student.user', 'class', 'markedBy']);
         return view('attendances.edit', compact('attendance'));
     }
@@ -174,6 +180,7 @@ class AttendanceController extends Controller
      */
     public function update(Request $request, Attendance $attendance)
     {
+        $this->authorize('update', $attendance);
         $request->validate([
             'status' => 'required|in:present,absent,late,leave,half_day',
             'remarks' => 'nullable|string|max:255',
@@ -213,6 +220,7 @@ class AttendanceController extends Controller
      */
     public function destroy(Attendance $attendance)
     {
+        $this->authorize('delete', $attendance);
         try {
             $class_id = $attendance->class_id;
             $date = $attendance->date->format('Y-m-d');
@@ -245,6 +253,7 @@ class AttendanceController extends Controller
      */
     public function myAttendance(Request $request)
     {
+        $this->authorize('myAttendance', \App\Models\Attendance::class);
         try {
             $student = Auth::user()->student;
             

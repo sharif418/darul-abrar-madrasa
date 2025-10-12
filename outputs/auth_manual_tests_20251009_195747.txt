@@ -1,0 +1,103 @@
+
+============================================================
+1) Successful login and dashboard access
+============================================================
+CSRF token: Hdw5ZxGDCU2vWqvY... | XSRF cookie present: yes
+----- HEADERS (top 40) -----
+HTTP/1.1 302 Found
+Server: nginx/1.24.0 (Ubuntu)
+Content-Type: text/html; charset=utf-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Cache-Control: no-cache, private
+Date: Thu, 09 Oct 2025 17:57:47 GMT
+Location: https://darulabrar.ailearnersbd.com/login
+Set-Cookie: XSRF-TOKEN=eyJpdiI6ImV1azN2SnV3eFdJV1pLOUlCUHQyM0E9PSIsInZhbHVlIjoiRXVBZHZjRFFSRmVyU3NiZFQvd0RDeDVtRk1HZmZyREZqcHQyZjNham03L0hKaGRGaDdnNkFlNFpVRnJDc2ZUSFRvTFZ3WWlaSEFFOGhzYWo5TTlhSVFwbHdmc2pHdnN0bzEyTFpJTjB1ektDR2k1QVppbDQxZXBGSHFMLzdlUzQiLCJtYWMiOiI2NTYzM2JkNDNjYjQ1NGU4Y2U0NDliYzkzMWFjMDQ1YmZhMDQzMjlmNTM4NzliNjIzNDEwODQ1Y2U4ZDE0MTNhIiwidGFnIjoiIn0%3D; expires=Thu, 09 Oct 2025 19:57:47 GMT; Max-Age=7200; path=/; domain=.ailearnersbd.com; secure; samesite=lax
+Set-Cookie: darul-abrar-madrasa-session=eyJpdiI6IjJvZEhRRGZuaG9xdThkUHdmcTNnWnc9PSIsInZhbHVlIjoiY2ZGSGl0R2ZTb2c5Tlo3V1hmUG1SdlRob21vTzA3REMxRzFKT0RSMVF6Ry9iRkVlcEJDMS8vV3VQS2VKNmtWdzVJdjFYYkU1cWV1UGRvWk9Dd2Z3UHlDaEFjSWRuSlg2b0lUcUc3VXVUSUdLWndBQUVFdzhiQS9IYng5Q3k1UzciLCJtYWMiOiI2NjQ5N2RhZDg0ZmE1MGQwYjFjMDM0MWQ4MmVjZDkwMjg1Y2VjZGVjZmNhZDA0YjY4MzgxODRjNzdiM2ZiMmVjIiwidGFnIjoiIn0%3D; expires=Thu, 09 Oct 2025 19:57:47 GMT; Max-Age=7200; path=/; domain=.ailearnersbd.com; secure; httponly; samesite=lax
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+
+HTTP_CODE: 302
+
+-- GET /dashboard --
+HTTP_CODE: 302
+
+============================================================
+2) Logout flow
+============================================================
+----- HEADERS (top 40) -----
+HTTP/1.1 419 unknown status
+Server: nginx/1.24.0 (Ubuntu)
+Content-Type: text/html; charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Cache-Control: no-cache, private
+date: Thu, 09 Oct 2025 17:57:48 GMT
+Set-Cookie: darul-abrar-madrasa-session=eyJpdiI6Ii96UnNnRmpoaksxTko0U2ZVSUdFNVE9PSIsInZhbHVlIjoib3QyYTAzYVl1eTVudHArRUtqaHp6enJCak1jNFQ2aFRlWVJ6Tk5zUEJ1NFowRmZUTUhUTTZydTIybGViVit1eXlzUnkvZGR3L3VkNjV0Z1crVVBKMXRWMUxCUjNBaFNxaXhUdFQ3dk93VWMwbkVtbzl2UjBiSXJCZDNmWUI5MmQiLCJtYWMiOiIyODc0Nzc4OWQ4MmJiOTY5ZTNlZWY5OGY5MTFmMjA0NzA4OWNkYjI5MzBhMTNhYzlhMGRhNDMwYjkxZTRlNjA1IiwidGFnIjoiIn0%3D; expires=Thu, 09 Oct 2025 19:57:48 GMT; Max-Age=7200; path=/; domain=.ailearnersbd.com; secure; httponly; samesite=lax
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+
+HTTP_CODE: 419
+
+============================================================
+3) Failed login (wrong password)
+============================================================
+CSRF token: 6jJZ9oEpw4mgAmA8... | XSRF cookie present: yes
+----- HEADERS (top 40) -----
+HTTP/1.1 302 Found
+Server: nginx/1.24.0 (Ubuntu)
+Content-Type: text/html; charset=utf-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Cache-Control: no-cache, private
+Date: Thu, 09 Oct 2025 17:57:53 GMT
+Location: https://darulabrar.ailearnersbd.com/login
+Set-Cookie: XSRF-TOKEN=eyJpdiI6Iis3M0lxSm1YanB0UVNlYWlkVk5zVkE9PSIsInZhbHVlIjoiY01oQTA4VXhxWVRCR1dOZE1zSExSZHluajJxQStOSE9TUzl0ODFucTR2V3dzMkZvSkdjVEw2QkxrQTdhallVVUc2aW9YSFA0ajllaE81T1J5Y2JQMlNwZjBCTENVekxlWEZ1dmQ5Q0I5ZjFySlhpR2NFYXVYK05ESEVFdkxIUUwiLCJtYWMiOiIyYzcyMzBiZjJlY2Y5OTQxOTNmNWFlMjc4ZGUxNTI5ZWViZTAwYzAwOGRkNGU3NzYyODFkMGM4OTlhZmFlNjZlIiwidGFnIjoiIn0%3D; expires=Thu, 09 Oct 2025 19:57:53 GMT; Max-Age=7200; path=/; domain=.ailearnersbd.com; secure; samesite=lax
+Set-Cookie: darul-abrar-madrasa-session=eyJpdiI6ImpKWllxd0xtOTEwQWJRbzRDUHh3R1E9PSIsInZhbHVlIjoiR0tlRmdEelN3em9WYlJQVi9ETFd2TUM4d2g5c25WZkpoL0xyUSs2OWVLUXdwMFNGSzBzZjRuOUI3VUZMR2l0QTczYVd2VDNYNmVQWnpsQncxandGSk1zdkJ3bGxEUkpJckhxbGpucmhRTEp1WStyU2xrWjEyVlJYWnJ6M3crcUsiLCJtYWMiOiJjNjhhZWJlM2ZkNjU1MzhlZDVlYmIyZTYzOGVjYTFmYmRjZjM1YWFlODhlMDM3OTJhZjY0YWRhNzc0MTk5ZGZlIiwidGFnIjoiIn0%3D; expires=Thu, 09 Oct 2025 19:57:53 GMT; Max-Age=7200; path=/; domain=.ailearnersbd.com; secure; httponly; samesite=lax
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+
+HTTP_CODE: 302
+
+============================================================
+4) Protected route without login
+============================================================
+----- HEADERS (top 40) -----
+HTTP/1.1 302 Found
+Server: nginx/1.24.0 (Ubuntu)
+Content-Type: text/html; charset=utf-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Cache-Control: no-cache, private
+Date: Thu, 09 Oct 2025 17:57:53 GMT
+Location: https://darulabrar.ailearnersbd.com/login
+Set-Cookie: XSRF-TOKEN=eyJpdiI6IlgzSmx6cklKV3J2YklNVkZJL2xrZEE9PSIsInZhbHVlIjoibWVvenpWaFVVdDNid1k2M1NHRk5MRGhZVk5OYU5tbG5FZDZlbFdjMnF3dnM2ZmQwWklybE9tbkJMRHdTOWpodVRFUWdpM2k3L2UvS2tyMjhPZ3UzOHZVOVFlVnhaTVV4WjZjL0JVdFB3MVBPZ0NNREQ3TjcrYmtEU1lDdXlyVi8iLCJtYWMiOiJkNzI1MWU3MjAxMWY5MGNlMTgxY2JiMWFhODIwNmY0YzdiMGM3YzU2YzAxMGIwNTdkMjQ1ZTMzZWM3NjkxZDgwIiwidGFnIjoiIn0%3D; expires=Thu, 09 Oct 2025 19:57:53 GMT; Max-Age=7200; path=/; domain=.ailearnersbd.com; secure; samesite=lax
+Set-Cookie: darul-abrar-madrasa-session=eyJpdiI6InE3Wk1LTGpMYnZNK1VwM20yN2RLV2c9PSIsInZhbHVlIjoiYVBMTmNYbStFQWppZXVQMTRyaXhxZkt5QmlIVHFWeXB0RTB3UWRUMllpclFGUzMxdWdtejVXYmFLVmVuMzJpaG14VzFaMVNGNDFOWlFDQWtjUzYyczY4L3BqNTJnQkUwNHo2TG94WjE0VWEwdEY4UWthUmNhOTV3NHBDTVFQYVYiLCJtYWMiOiJiYTM2NDBhYzBmODk2NTZjOTY3NGEwMWQzMzQ5MDg2YTMwNDYwYTUzM2IxOGZiOGJmNzZjODFkNzRiNmZhM2VjIiwidGFnIjoiIn0%3D; expires=Thu, 09 Oct 2025 19:57:53 GMT; Max-Age=7200; path=/; domain=.ailearnersbd.com; secure; httponly; samesite=lax
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+
+HTTP_CODE: 302
+
+============================================================
+5) CSRF missing on login (expect 419)
+============================================================
+----- HEADERS (top 40) -----
+HTTP/1.1 419 unknown status
+Server: nginx/1.24.0 (Ubuntu)
+Content-Type: text/html; charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Cache-Control: no-cache, private
+date: Thu, 09 Oct 2025 17:57:53 GMT
+Set-Cookie: darul-abrar-madrasa-session=eyJpdiI6IlpCZ2RvcGhLb2FNb0NKYXFsaUNBcXc9PSIsInZhbHVlIjoiK0o2aWN1cGREb2pRK3dJak54eS8rcFZxcXlkelpzODlvZURsbXUzb1p1d3IwK3djelpWaC9ZeG9pZkI1bGFuOTFNZkZUQXEvbXRLVjhtK2ZUUE1iL2JXOTlVZEV0eWI3aGprbGFPUWcwb0U3SUdzeEF6WXNnUFpHSnhOaloyNGoiLCJtYWMiOiIzNzNhNzRiMTMxYmE2MjIyMjJmODI4ZTg0NTJjMTA0ODIwMjJlOGFmOTgyYjlhNTRmMzM3ZDlmNmFmY2QzNTI1IiwidGFnIjoiIn0%3D; expires=Thu, 09 Oct 2025 19:57:53 GMT; Max-Age=7200; path=/; domain=.ailearnersbd.com; secure; httponly; samesite=lax
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+
+HTTP_CODE: 419
+
+=== DONE: Authentication manual tests ===

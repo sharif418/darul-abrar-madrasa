@@ -47,10 +47,11 @@ class Student extends Model
         'roll_number',
         'admission_number',
         'admission_date',
-        'father_name',
-        'mother_name',
-        'guardian_phone',
-        'guardian_email',
+        // Deprecated: guardian direct fields kept for backward compatibility
+        'father_name',       // Deprecated - use guardians relationship
+        'mother_name',       // Deprecated - use guardians relationship
+        'guardian_phone',    // Deprecated - use guardians relationship
+        'guardian_email',    // Deprecated - use guardians relationship
         'address',
         'date_of_birth',
         'gender',
@@ -117,6 +118,47 @@ class Student extends Model
     public function results()
     {
         return $this->hasMany(Result::class);
+    }
+
+    /**
+     * Guardians relationship via pivot table guardian_student
+     */
+    public function guardians()
+    {
+        return $this->belongsToMany(Guardian::class, 'guardian_student')
+            ->withPivot([
+                'relationship',
+                'is_primary_guardian',
+                'can_pickup',
+                'financial_responsibility',
+                'receive_notifications',
+                'notes',
+            ])
+            ->withTimestamps();
+    }
+
+    /**
+     * Primary guardian helper.
+     */
+    public function getPrimaryGuardian()
+    {
+        return $this->guardians()->wherePivot('is_primary_guardian', true)->first();
+    }
+
+    /**
+     * Financially responsible guardian helper.
+     */
+    public function getFinancialGuardian()
+    {
+        return $this->guardians()->wherePivot('financial_responsibility', true)->first();
+    }
+
+    /**
+     * Guardians who should receive notifications.
+     */
+    public function getGuardiansForNotification()
+    {
+        return $this->guardians()->wherePivot('receive_notifications', true)->get();
     }
 
     /**
@@ -235,11 +277,12 @@ class Student extends Model
      */
     public function getPendingFeesAmount()
     {
+        // Consider waivers and installments via Fee model accessors
         return $this->fees()
             ->whereIn('status', ['unpaid', 'partial'])
             ->get()
             ->sum(function ($fee) {
-                return $fee->amount - $fee->paid_amount;
+                return max(0, (float)$fee->net_amount - (float)$fee->paid_amount);
             });
     }
 
@@ -253,6 +296,22 @@ class Student extends Model
         return $this->fees()
             ->whereIn('status', ['unpaid', 'partial'])
             ->exists();
+    }
+
+    /**
+     * Get active waivers for the student.
+     */
+    public function getActiveWaivers()
+    {
+        return FeeWaiver::query()->active()->forStudent($this->id)->get();
+    }
+
+    /**
+     * Whether the student has any installment plan.
+     */
+    public function hasInstallmentPlan(): bool
+    {
+        return $this->fees()->whereHas('installments')->exists();
     }
 
     /**

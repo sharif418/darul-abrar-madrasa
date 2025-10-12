@@ -1,0 +1,4 @@
+=== Smoke Test 20251011_072614 ===
+Base: http://127.0.0.1:8080
+Waiting for server...
+Server up with /login code=200 after 1 sec

@@ -241,4 +241,53 @@ class NoticeController extends Controller
             return back()->with('error', 'Failed to load notices. Please try again.');
         }
     }
+
+    /**
+     * Public notice show for authenticated users with visibility checks.
+     */
+    public function showPublic(Notice $notice)
+    {
+        try {
+            $user = Auth::user();
+
+            // Ensure notice is active, published, not expired
+            if (!$notice->is_active || ($notice->publish_date && $notice->publish_date->isFuture()) || ($notice->expire_date && $notice->expire_date->isPast())) {
+                abort(404);
+            }
+
+            // Role-based visibility
+            $allowed = false;
+            $role = $user->role ?? 'guest';
+            if ($notice->notice_for === 'all') {
+                $allowed = true;
+            } elseif ($notice->notice_for === 'students' && $role === 'student') {
+                $allowed = true;
+            } elseif ($notice->notice_for === 'teachers' && $role === 'teacher') {
+                $allowed = true;
+            } elseif ($notice->notice_for === 'staff' && in_array($role, ['staff', 'admin'])) {
+                $allowed = true;
+            } elseif ($notice->notice_for === 'guardians' && $role === 'guardian') {
+                $allowed = true;
+            } elseif ($role === 'admin') {
+                // Admin can view any active, published, non-expired notice
+                $allowed = true;
+            }
+
+            if (!$allowed) {
+                abort(403, 'You are not authorized to view this notice.');
+            }
+
+            $notice->load('publishedBy');
+
+            return view('notices.show', compact('notice'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load public notice', [
+                'notice_id' => $notice->id ?? null,
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
+
+            return back()->with('error', 'Failed to load notice. Please try again.');
+        }
+    }
 }

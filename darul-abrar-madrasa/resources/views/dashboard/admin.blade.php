@@ -251,6 +251,22 @@
                 </div>
             </div>
         </a>
+
+        <a href="{{ route('admin.system-health') }}" class="rounded-xl p-6 gradient-indigo text-white hover-lift">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-semibold text-lg">System Health</div>
+                    <div class="text-white/80 text-sm">Monitor system integrity</div>
+                </div>
+            </div>
+        </a>
     </div>
 
     <!-- Tables: Recent Fees and Upcoming Exams -->

@@ -117,20 +117,57 @@ class RolePermissionSeeder extends Seeder
             'view-admin-dashboard',
             'view-teacher-dashboard',
             'view-student-dashboard',
+
+            // Guardian permissions
+            'view-guardian-dashboard',
+            'view-children-info',
+            'view-children-attendance',
+            'view-children-results',
+            'view-children-fees',
+            'pay-fees-online',
+            'message-teachers',
+
+            // Accountant permissions
+            'view-accountant-dashboard',
+            'manage-fee-waivers',
+            'approve-waivers',
+            'manage-installments',
+            'apply-late-fees',
+            'generate-financial-reports',
+            'reconcile-payments',
+            'manage-late-fee-policies',
+            'view-audit-logs',
+            'export-financial-data',
+
+            // Library permissions (future)
+            'view-library-dashboard',
+            'manage-books',
+            'issue-books',
+            'return-books',
+            'manage-fines',
         ];
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission], ['name' => $permission]);
         }
 
+        // Get guard name from config
+        $guardName = config('auth.defaults.guard', 'web');
+
         // Create roles and assign permissions
 
         // Admin Role - Full Access
-        $adminRole = Role::firstOrCreate(['name' => 'admin'], ['name' => 'admin']);
+        $adminRole = Role::firstOrCreate(
+            ['name' => 'admin', 'guard_name' => $guardName],
+            ['name' => 'admin', 'guard_name' => $guardName]
+        );
         $adminRole->syncPermissions(Permission::all());
 
         // Teacher Role - Limited Access
-        $teacherRole = Role::firstOrCreate(['name' => 'teacher'], ['name' => 'teacher']);
+        $teacherRole = Role::firstOrCreate(
+            ['name' => 'teacher', 'guard_name' => $guardName],
+            ['name' => 'teacher', 'guard_name' => $guardName]
+        );
         $teacherRole->syncPermissions([
             // View access
             'view-students',
@@ -172,7 +209,10 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         // Student Role - View Only Access
-        $studentRole = Role::firstOrCreate(['name' => 'student'], ['name' => 'student']);
+        $studentRole = Role::firstOrCreate(
+            ['name' => 'student', 'guard_name' => $guardName],
+            ['name' => 'student', 'guard_name' => $guardName]
+        );
         $studentRole->syncPermissions([
             // Own profile
             'view-own-profile',
@@ -199,7 +239,10 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         // Staff Role (Optional - for future use)
-        $staffRole = Role::firstOrCreate(['name' => 'staff'], ['name' => 'staff']);
+        $staffRole = Role::firstOrCreate(
+            ['name' => 'staff', 'guard_name' => $guardName],
+            ['name' => 'staff', 'guard_name' => $guardName]
+        );
         $staffRole->syncPermissions([
             'view-students',
             'view-teachers',
@@ -209,35 +252,90 @@ class RolePermissionSeeder extends Seeder
             'view-notices',
         ]);
 
-        // Assign admin role to existing admin users
+        // Guardian Role
+        $guardianRole = Role::firstOrCreate(
+            ['name' => 'guardian', 'guard_name' => $guardName],
+            ['name' => 'guardian', 'guard_name' => $guardName]
+        );
+        $guardianRole->syncPermissions([
+            'view-guardian-dashboard',
+            'view-children-info',
+            'view-children-attendance',
+            'view-children-results',
+            'view-children-fees',
+            'pay-fees-online',
+            'view-notices',
+            'download-study-materials',
+        ]);
+
+        // Accountant Role
+        $accountantRole = Role::firstOrCreate(
+            ['name' => 'accountant', 'guard_name' => $guardName],
+            ['name' => 'accountant', 'guard_name' => $guardName]
+        );
+        $accountantRole->syncPermissions([
+            'view-accountant-dashboard',
+            'view-fees',
+            'create-fees',
+            'edit-fees',
+            'record-payment',
+            'generate-invoice',
+            'view-fee-reports',
+            'manage-fee-waivers',
+            'approve-waivers',
+            'manage-installments',
+            'apply-late-fees',
+            'generate-financial-reports',
+            'reconcile-payments',
+            'manage-late-fee-policies',
+            'view-audit-logs',
+            'export-financial-data',
+            'view-students',
+        ]);
+
+        // Verify all roles exist before assignment
+        $this->verifyRolesExist();
+
+        // Get users by role
         $adminUsers = User::where('role', 'admin')->get();
-        foreach ($adminUsers as $user) {
-            if (!$user->hasRole('admin')) {
-                $user->assignRole('admin');
-            }
-        }
-
-        // Assign teacher role to existing teacher users
         $teacherUsers = User::where('role', 'teacher')->get();
-        foreach ($teacherUsers as $user) {
-            if (!$user->hasRole('teacher')) {
-                $user->assignRole('teacher');
-            }
-        }
-
-        // Assign student role to existing student users
         $studentUsers = User::where('role', 'student')->get();
-        foreach ($studentUsers as $user) {
-            if (!$user->hasRole('student')) {
-                $user->assignRole('student');
-            }
-        }
-
-        // Assign staff role to existing staff users
         $staffUsers = User::where('role', 'staff')->get();
-        foreach ($staffUsers as $user) {
-            if (!$user->hasRole('staff')) {
-                $user->assignRole('staff');
+        $guardianUsers = User::where('role', 'guardian')->get();
+        $accountantUsers = User::where('role', 'accountant')->get();
+
+        // Enhanced role assignment with error handling
+        $totalProcessed = 0;
+        $totalAssigned = 0;
+        $errorCount = 0;
+
+        $roleAssignments = [
+            'admin' => $adminUsers,
+            'teacher' => $teacherUsers,
+            'student' => $studentUsers,
+            'staff' => $staffUsers,
+            'guardian' => $guardianUsers,
+            'accountant' => $accountantUsers,
+        ];
+
+        foreach ($roleAssignments as $roleName => $users) {
+            foreach ($users as $user) {
+                $totalProcessed++;
+                // Use spatieHasRole() to check only Spatie roles, not legacy fallback
+                if (!$user->spatieHasRole($roleName)) {
+                    try {
+                        $user->assignRole($roleName);
+                        $totalAssigned++;
+                    } catch (\Exception $e) {
+                        $errorCount++;
+                        $this->command->warn("Failed to assign {$roleName} role to user {$user->id}: {$e->getMessage()}");
+                        \Log::error('RolePermissionSeeder: Failed to assign role', [
+                            'user_id' => $user->id,
+                            'role' => $roleName,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
             }
         }
 
@@ -246,5 +344,32 @@ class RolePermissionSeeder extends Seeder
         $this->command->info('Teacher users: ' . $teacherUsers->count());
         $this->command->info('Student users: ' . $studentUsers->count());
         $this->command->info('Staff users: ' . $staffUsers->count());
+        $this->command->info('Guardian users: ' . $guardianUsers->count());
+        $this->command->info('Accountant users: ' . $accountantUsers->count());
+        $this->command->info('Total users processed: ' . $totalProcessed);
+        $this->command->info('Total Spatie roles assigned: ' . $totalAssigned);
+        
+        if ($errorCount > 0) {
+            $this->command->warn('Errors encountered: ' . $errorCount);
+        }
+        
+        $this->command->info('Run php artisan sync:spatie-roles to verify synchronization');
+    }
+
+    /**
+     * Verify all required roles exist
+     */
+    private function verifyRolesExist(): void
+    {
+        $expectedRoles = ['admin', 'teacher', 'student', 'staff', 'guardian', 'accountant'];
+        
+        foreach ($expectedRoles as $role) {
+            if (!Role::where('name', $role)->exists()) {
+                $this->command->error("Role '{$role}' does not exist!");
+                throw new \Exception("Required role '{$role}' is missing from the database");
+            }
+        }
+        
+        $this->command->info('All required roles verified');
     }
 }

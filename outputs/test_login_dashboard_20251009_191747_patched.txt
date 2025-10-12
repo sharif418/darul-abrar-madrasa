@@ -1,0 +1,19 @@
+==========================================
+🧪 Testing Login and Dashboard Access
+==========================================
+
+1. Getting CSRF and XSRF tokens from login page...
+   CSRF Token: ...
+   XSRF cookie present: yes
+
+2. Attempting login with admin credentials...
+   HTTP Response Code: 419
+
+3. Accessing dashboard...
+   Dashboard HTTP Code: 302
+
+⚠️  Unexpected response code: 302
+
+==========================================
+Test Complete
+==========================================

@@ -27,6 +27,7 @@ class FeeController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Fee::class);
         try {
             $filters = [
                 'status' => $request->status,
@@ -67,6 +68,7 @@ class FeeController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', Fee::class);
         $students = Student::with('user:id,name')->get();
         $feeTypes = ['admission', 'monthly', 'exam', 'library', 'transport', 'hostel', 'other'];
         
@@ -78,6 +80,7 @@ class FeeController extends Controller
      */
     public function store(StoreFeeRequest $request)
     {
+        $this->authorize('create', Fee::class);
         try {
             $data = $request->validated();
             
@@ -113,6 +116,7 @@ class FeeController extends Controller
     {
         try {
             $fee = Fee::with(['student.user', 'student.class', 'collectedBy'])->findOrFail($id);
+            $this->authorize('view', $fee);
             return view('fees.show', compact('fee'));
         } catch (\Exception $e) {
             Log::error('Failed to load fee details', [
@@ -131,6 +135,7 @@ class FeeController extends Controller
     public function edit(string $id)
     {
         $fee = Fee::findOrFail($id);
+        $this->authorize('update', $fee);
         $students = Student::with('user:id,name')->get();
         $feeTypes = ['admission', 'monthly', 'exam', 'library', 'transport', 'hostel', 'other'];
         
@@ -144,6 +149,7 @@ class FeeController extends Controller
     {
         try {
             $fee = Fee::findOrFail($id);
+            $this->authorize('update', $fee);
             $data = $request->validated();
             
             // Set payment date and collected_by if paid or partial and not set before
@@ -179,6 +185,7 @@ class FeeController extends Controller
     {
         try {
             $fee = Fee::findOrFail($id);
+            $this->authorize('delete', $fee);
             
             // Check if fee can be deleted (not paid)
             if ($fee->status === 'paid') {
@@ -238,6 +245,7 @@ class FeeController extends Controller
     {
         try {
             $fee = Fee::with(['student.user', 'student.class', 'collectedBy'])->findOrFail($id);
+            $this->authorize('view', $fee);
             
             $pdf = Pdf::loadView('fees.invoice', compact('fee'));
 
@@ -271,9 +279,10 @@ class FeeController extends Controller
         ]);
 
         try {
-            $fee = Fee::findOrFail($id);
-            
-            $paymentData = [
+        $fee = Fee::findOrFail($id);
+        $this->authorize('recordPayment', $fee);
+        
+        $paymentData = [
                 'amount' => $request->paid_amount,
                 'payment_method' => $request->payment_method,
                 'transaction_id' => $request->transaction_id,
@@ -374,6 +383,7 @@ class FeeController extends Controller
     {
         try {
             $fee = Fee::with(['student.user'])->findOrFail($id);
+            $this->authorize('recordPayment', $fee);
             
             if ($fee->status === 'paid') {
                 return redirect()->route('fees.show', $fee->id)

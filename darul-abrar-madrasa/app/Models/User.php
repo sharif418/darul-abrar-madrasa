@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * Class User
@@ -32,6 +33,10 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
+    use HasRoles {
+        hasRole as spatieHasRole;
+        hasAnyRole as spatieHasAnyRole;
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -90,6 +95,26 @@ class User extends Authenticatable
     public function student()
     {
         return $this->hasOne(Student::class);
+    }
+
+    /**
+     * Get the guardian record associated with the user.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function guardian()
+    {
+        return $this->hasOne(Guardian::class);
+    }
+
+    /**
+     * Get the accountant record associated with the user.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function accountant()
+    {
+        return $this->hasOne(Accountant::class);
     }
 
     /**
@@ -171,14 +196,152 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if the user is a guardian.
+     *
+     * Temporary dual-check during migration to Spatie permission system.
+     *
+     * @return bool
+     */
+    public function isGuardian(): bool
+    {
+        return $this->spatieHasRole('guardian') || $this->role === 'guardian';
+    }
+
+    /**
+     * Check if the user is an accountant.
+     *
+     * Temporary dual-check during migration to Spatie permission system.
+     *
+     * @return bool
+     */
+    public function isAccountant(): bool
+    {
+        return $this->spatieHasRole('accountant') || $this->role === 'accountant';
+    }
+
+    /**
+     * Check if the user has a corresponding record in the role-specific table.
+     *
+     * This method verifies that a user with a specific role has the required
+     * record in the corresponding role table (teachers, students, guardians, accountants).
+     * Admin and staff roles always return true as they don't require separate tables.
+     * 
+     * During migration to Spatie permission system, this method checks both the legacy
+     * role column and Spatie roles to ensure accurate reporting.
+     *
+     * @return bool True if the role record exists or is not required, false otherwise
+     */
+    public function hasRoleRecord(): bool
+    {
+        // Determine effective role (prefer Spatie roles during migration)
+        $role = $this->role;
+        if ($this->spatieHasRole('teacher')) {
+            $role = 'teacher';
+        } elseif ($this->spatieHasRole('student')) {
+            $role = 'student';
+        } elseif ($this->spatieHasRole('guardian')) {
+            $role = 'guardian';
+        } elseif ($this->spatieHasRole('accountant')) {
+            $role = 'accountant';
+        }
+        
+        return match($role) {
+            'teacher' => $this->teacher()->exists(),
+            'student' => $this->student()->exists(),
+            'guardian' => $this->guardian()->exists(),
+            'accountant' => $this->accountant()->exists(),
+            'admin', 'staff' => true,
+            default => false,
+        };
+    }
+
+    /**
+     * Get the role-specific record for this user.
+     *
+     * This accessor returns the corresponding role model instance (Teacher, Student,
+     * Guardian, or Accountant) based on the user's role. Returns null for admin/staff
+     * roles or if no record exists.
+     *
+     * @return Teacher|Student|Guardian|Accountant|null
+     */
+    public function getRoleRecordAttribute()
+    {
+        return match($this->role) {
+            'teacher' => $this->teacher,
+            'student' => $this->student,
+            'guardian' => $this->guardian,
+            'accountant' => $this->accountant,
+            default => null,
+        };
+    }
+
+    /**
      * Check if user has specific role.
+     *
+     * Temporary dual-check during migration to Spatie permission system:
+     * - Prefer Spatie roles
+     * - Fallback to legacy string-based role column
      *
      * @param string $role
      * @return bool
      */
-    public function hasRole(string $role): bool
+    public function hasRole($roles): bool
     {
-        return $this->role === $role;
+        // Support arrays/collections as Spatie may pass arrays internally
+        if (is_array($roles) || $roles instanceof \Illuminate\Support\Collection) {
+            foreach ($roles as $role) {
+                if ($this->spatieHasRole($role) || $this->role === $role) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Single role check
+        if ($this->spatieHasRole($roles)) {
+            return true;
+        }
+
+        // Fallback legacy role check (to be removed after full migration)
+        return $this->role === $roles;
+    }
+
+    /**
+     * Check if user has any of the specified roles.
+     *
+     * Temporary dual-check during migration to Spatie permission system:
+     * - Prefer Spatie roles
+     * - Fallback to legacy string-based role column
+     * - Supports both array and pipe-delimited string inputs
+     *
+     * @param string|array|\Illuminate\Support\Collection $roles
+     * @return bool
+     */
+    public function hasAnyRole($roles): bool
+    {
+        // Convert pipe-delimited string to array
+        if (is_string($roles) && str_contains($roles, '|')) {
+            $roles = explode('|', $roles);
+        }
+
+        // Ensure we have an array
+        if (!is_array($roles) && !($roles instanceof \Illuminate\Support\Collection)) {
+            $roles = [$roles];
+        }
+
+        // Check Spatie roles first
+        if ($this->spatieHasAnyRole($roles)) {
+            return true;
+        }
+
+        // Fallback to legacy role column check
+        foreach ($roles as $role) {
+            if ($this->role === $role) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

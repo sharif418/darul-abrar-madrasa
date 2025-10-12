@@ -9,7 +9,10 @@ use App\Repositories\AttendanceRepository;
 use App\Repositories\ExamRepository;
 use App\Repositories\ResultRepository;
 use App\Services\FileUploadService;
+use App\Services\ActivityLogService;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Config;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,7 +37,10 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(FeeRepository::class, function ($app) {
-            return new FeeRepository($app->make(\App\Models\Fee::class));
+            return new FeeRepository(
+                $app->make(\App\Models\Fee::class),
+                $app->make(\App\Services\ActivityLogService::class)
+            );
         });
 
         $this->app->singleton(AttendanceRepository::class, function ($app) {
@@ -60,6 +66,24 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $appUrl = config('app.url');
+
+        // Force HTTPS scheme if the app URL is https
+        if ($appUrl && str_starts_with($appUrl, 'https://')) {
+            URL::forceScheme('https');
+            // In HTTPS environments, secure cookies are appropriate
+            Config::set('session.secure', true);
+        }
+
+        // Ensure cookies function locally over HTTP (e.g., 127.0.0.1:8080)
+        if ($appUrl && str_starts_with($appUrl, 'http://')) {
+            Config::set('session.secure', false);
+            // Lax same-site supports typical CSRF-protected POST flows
+            Config::set('session.same_site', 'lax');
+        }
+
+        // Normalize session cookie domain: let Laravel default to the current host.
+        // Explicit, incorrect domains (e.g., 127.0.0.1) break session persistence under real hostnames.
+        Config::set('session.domain', null);
     }
 }

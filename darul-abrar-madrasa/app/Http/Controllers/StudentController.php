@@ -25,6 +25,7 @@ class StudentController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Student::class);
         try {
             $filters = [
                 'search' => $request->search,
@@ -51,6 +52,7 @@ class StudentController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', Student::class);
         $classes = ClassRoom::with('department')->get();
         return view('students.create', compact('classes'));
     }
@@ -60,6 +62,7 @@ class StudentController extends Controller
      */
     public function store(StoreStudentRequest $request)
     {
+        $this->authorize('create', Student::class);
         try {
             $student = $this->studentRepository->create($request->validated());
 
@@ -86,6 +89,7 @@ class StudentController extends Controller
      */
     public function show(Student $student)
     {
+        $this->authorize('view', $student);
         try {
             // Load enriched student with relationships/statistics from repository
             $student = $this->studentRepository->getWithStats($student->id);
@@ -138,6 +142,7 @@ class StudentController extends Controller
      */
     public function edit(Student $student)
     {
+        $this->authorize('update', $student);
         $student->load('user');
         $classes = ClassRoom::with('department')->get();
         return view('students.edit', compact('student', 'classes'));
@@ -148,6 +153,7 @@ class StudentController extends Controller
      */
     public function update(UpdateStudentRequest $request, Student $student)
     {
+        $this->authorize('update', $student);
         try {
             $student = $this->studentRepository->update($student, $request->validated());
 
@@ -175,6 +181,7 @@ class StudentController extends Controller
      */
     public function destroy(Student $student)
     {
+        $this->authorize('delete', $student);
         try {
             $studentId = $student->id;
             $this->studentRepository->delete($student);
@@ -202,6 +209,7 @@ class StudentController extends Controller
      */
     public function bulkPromote(BulkStudentActionRequest $request)
     {
+        $this->authorize('bulkPromote', Student::class);
         try {
             $data = $request->validated();
 
@@ -235,6 +243,7 @@ class StudentController extends Controller
      */
     public function bulkTransfer(BulkStudentActionRequest $request)
     {
+        $this->authorize('bulkTransfer', Student::class);
         try {
             $data = $request->validated();
 
@@ -268,6 +277,7 @@ class StudentController extends Controller
      */
     public function bulkStatusUpdate(BulkStudentActionRequest $request)
     {
+        $this->authorize('bulkStatusUpdate', Student::class);
         try {
             $data = $request->validated();
 

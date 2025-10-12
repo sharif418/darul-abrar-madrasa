@@ -4,8 +4,26 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
+/**
+ * Class StudyMaterial
+ *
+ * @property int $id
+ * @property int $teacher_id
+ * @property int $class_id
+ * @property int $subject_id
+ * @property string $title
+ * @property string|null $description
+ * @property string|null $file_path
+ * @property string $content_type
+ * @property bool $is_published
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ *
+ * @property-read Teacher $teacher
+ * @property-read ClassRoom $class
+ * @property-read Subject $subject
+ */
 class StudyMaterial extends Model
 {
     use HasFactory;
@@ -37,6 +55,8 @@ class StudyMaterial extends Model
 
     /**
      * Get the teacher that owns the study material.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function teacher()
     {
@@ -45,6 +65,8 @@ class StudyMaterial extends Model
 
     /**
      * Get the class that the study material belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function class()
     {
@@ -53,6 +75,8 @@ class StudyMaterial extends Model
 
     /**
      * Get the subject that the study material belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function subject()
     {
@@ -60,48 +84,9 @@ class StudyMaterial extends Model
     }
 
     /**
-     * Get the file URL attribute.
-     *
-     * @return string|null
-     */
-    public function getFileUrlAttribute()
-    {
-        if ($this->file_path) {
-            return Storage::url($this->file_path);
-        }
-        return null;
-    }
-
-    /**
-     * Get the file extension attribute.
-     *
-     * @return string|null
-     */
-    public function getFileExtensionAttribute()
-    {
-        if ($this->file_path) {
-            return pathinfo($this->file_path, PATHINFO_EXTENSION);
-        }
-        return null;
-    }
-
-    /**
-     * Get the file name attribute.
-     *
-     * @return string|null
-     */
-    public function getFileNameAttribute()
-    {
-        if ($this->file_path) {
-            return pathinfo($this->file_path, PATHINFO_FILENAME);
-        }
-        return null;
-    }
-
-    /**
      * Scope a query to only include published study materials.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param \Illuminate\Database\Eloquent\Builder $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePublished($query)
@@ -110,22 +95,10 @@ class StudyMaterial extends Model
     }
 
     /**
-     * Scope a query to only include study materials for a specific teacher.
+     * Scope a query to filter by class.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  int  $teacherId
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeForTeacher($query, $teacherId)
-    {
-        return $query->where('teacher_id', $teacherId);
-    }
-
-    /**
-     * Scope a query to only include study materials for a specific class.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  int  $classId
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int $classId
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForClass($query, $classId)
@@ -134,10 +107,10 @@ class StudyMaterial extends Model
     }
 
     /**
-     * Scope a query to only include study materials for a specific subject.
+     * Scope a query to filter by subject.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  int  $subjectId
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int $subjectId
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForSubject($query, $subjectId)
@@ -146,14 +119,28 @@ class StudyMaterial extends Model
     }
 
     /**
-     * Scope a query to only include study materials of a specific type.
+     * Scope a query to search by title or description.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  string  $type
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $search
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeOfType($query, $type)
+    public function scopeSearch($query, $search)
     {
-        return $query->where('content_type', $type);
+        return $query->where(function ($q) use ($search) {
+            $q->where('title', 'like', "%{$search}%")
+              ->orWhere('description', 'like', "%{$search}%");
+        });
+    }
+
+    /**
+     * Check if the study material can be deleted.
+     *
+     * @return bool
+     */
+    public function canBeDeleted(): bool
+    {
+        // Add business constraints if needed
+        return true;
     }
 }

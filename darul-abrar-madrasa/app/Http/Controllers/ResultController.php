@@ -30,6 +30,7 @@ class ResultController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorize('viewAny', \App\Models\Result::class);
         try {
             $filters = [
                 'exam_id' => $request->exam_id,
@@ -84,6 +85,7 @@ class ResultController extends Controller
      */
     public function createBulk($exam_id, $class_id, $subject_id)
     {
+        $this->authorize('create', \App\Models\Result::class);
         try {
             // Allow 'latest' keyword to pick the most recent exam for the class
             if ($exam_id === 'latest') {
@@ -157,6 +159,7 @@ class ResultController extends Controller
      */
     public function storeBulk(StoreResultRequest $request)
     {
+        $this->authorize('create', \App\Models\Result::class);
         try {
             $validated = $request->validated();
             
@@ -202,6 +205,7 @@ class ResultController extends Controller
      */
     public function show(Result $result)
     {
+        $this->authorize('view', $result);
         try {
             $result->load(['student.user', 'exam', 'subject', 'createdBy']);
             return view('results.show', compact('result'));
@@ -221,6 +225,7 @@ class ResultController extends Controller
      */
     public function edit(Result $result)
     {
+        $this->authorize('update', $result);
         // Check if results are already published
         if ($result->exam->is_result_published) {
             return redirect()->route('results.index')
@@ -238,6 +243,7 @@ class ResultController extends Controller
      */
     public function update(Request $request, Result $result)
     {
+        $this->authorize('update', $result);
         // Check if results are already published
         if ($result->exam->is_result_published) {
             return redirect()->route('results.index')
@@ -282,6 +288,7 @@ class ResultController extends Controller
      */
     public function destroy(Result $result)
     {
+        $this->authorize('delete', $result);
         try {
             $this->resultRepository->delete($result);
 

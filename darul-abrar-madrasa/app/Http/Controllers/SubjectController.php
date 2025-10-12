@@ -20,6 +20,16 @@ class SubjectController extends Controller
         try {
             $query = Subject::with(['class.department', 'teacher.user']);
 
+            // If teacher, only show subjects assigned to them
+            $user = auth()->user();
+            if ($user->isTeacher()) {
+                if (!$user->teacher) {
+                    Log::error('Teacher record missing for user accessing subjects', ['user_id' => $user->id, 'email' => $user->email]);
+                    return redirect()->route('dashboard')->with('error', 'Your teacher profile is incomplete. Please contact the administrator.');
+                }
+                $query->where('teacher_id', $user->teacher->id);
+            }
+
             // Search functionality
             if ($request->filled('search')) {
                 $search = $request->search;
@@ -104,6 +114,25 @@ class SubjectController extends Controller
     public function show(Subject $subject)
     {
         try {
+            // Authorization: Teachers can only view subjects assigned to them
+            $user = auth()->user();
+            if ($user->isTeacher()) {
+                if (!$user->teacher) {
+                    Log::error('Teacher record missing for user accessing subject', ['user_id' => $user->id, 'email' => $user->email, 'subject_id' => $subject->id]);
+                    return redirect()->route('dashboard')->with('error', 'Your teacher profile is incomplete. Please contact the administrator.');
+                }
+                
+                if ($subject->teacher_id !== $user->teacher->id) {
+                    Log::warning('Teacher attempted to access unauthorized subject', [
+                        'user_id' => $user->id,
+                        'teacher_id' => $user->teacher->id,
+                        'subject_id' => $subject->id,
+                        'subject_teacher_id' => $subject->teacher_id
+                    ]);
+                    abort(403, 'You are not authorized to view this subject.');
+                }
+            }
+            
             $subject->load(['class.department', 'teacher.user', 'results.student.user']);
             
             // Get students enrolled in this subject's class

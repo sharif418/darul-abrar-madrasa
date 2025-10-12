@@ -1,0 +1,41 @@
+==========================================
+🧪 Testing Login and Dashboard Access
+==========================================
+
+1. Getting CSRF and XSRF tokens from login page...
+   CSRF Token: rNcYBx2Lg4eJ25GYlXWs...
+   XSRF cookie present: yes
+
+2. Attempting login with admin credentials...
+   HTTP Response Code: 302
+
+3. Accessing dashboard...
+   Dashboard HTTP Code: 200
+
+✅ Dashboard loaded successfully!
+
+Dashboard content preview:
+HTTP/1.1 200 OK
+Server: nginx/1.24.0 (Ubuntu)
+Content-Type: text/html; charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Vary: Accept-Encoding
+Cache-Control: no-cache, private
+Date: Thu, 09 Oct 2025 17:23:33 GMT
+Set-Cookie: XSRF-TOKEN=eyJpdiI6InZUOVJuRHJQd0FGT1pFekZ2NDBNQ3c9PSIsInZhbHVlIjoiVklFN2o1dm14OUd1dWJaaEw0eDVLTWRRYXJoUzUwVFhzdWROL0NjVmdCWHh5WEwxV25RTlhnZXc2a042dFIyTXRkUVJCWTY3TVJObUFGU2Zha2lnZjR6RHNrUm1MMWRBeXJJSVN5N0hldHliYjBMYU1YZ0V6OC80U1VZR1MvdVgiLCJtYWMiOiJkZDk1ZjAyYzBkZDU3NTVhZWZiMDAyMjNmNDUxMzQyZDhlOGI3OWQ5ZjMyNDUxNTg3Mzc5NjUyZTI5NjRkODUzIiwidGFnIjoiIn0%3D; expires=Thu, 09 Oct 2025 19:23:33 GMT; Max-Age=7200; path=/; domain=.ailearnersbd.com; secure; samesite=lax
+Set-Cookie: darul-abrar-madrasa-session=eyJpdiI6IkdkT0h5WE9Xa2VOZ2NZTHJiaTBGS3c9PSIsInZhbHVlIjoiMy9DdDhZdldCTUF6Z1cySFVRNnY4eXJoWTVIZENxMGh1NG1ZNGhHU3BOM3BsaGZkbkE3OTE0aGNmRTNSMHFsUHF3enJsdGZ1T2JybjBJRHhUa0tEdEFheW12ZExXS3hYWjA4czZUUHFMdDMwS1RsZWtodnJCaGtRaEtFbWt5Wm8iLCJtYWMiOiIyNzEzZTU4ZGI1OWZhYTYzMDc3ZGU1Y2Q1ZmNiNGIwZGQ0MDcxNDFiOGEwN2ViZmU0ZGMxZDQ4YTU1ZDBhYzZjIiwidGFnIjoiIn0%3D; expires=Thu, 09 Oct 2025 19:23:33 GMT; Max-Age=7200; path=/; domain=.ailearnersbd.com; secure; httponly; samesite=lax
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="8pQXzesRdf7dwFU1POLCfGfNmzajKtF2DDU6HSxA">
+
+==========================================
+Test Complete
+==========================================
