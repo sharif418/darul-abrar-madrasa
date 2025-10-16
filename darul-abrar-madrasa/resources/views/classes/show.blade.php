@@ -57,6 +57,14 @@
                             <p class="text-gray-900">{{ $class->department->name }}</p>
                         </div>
                         <div>
+                            <label class="text-sm text-gray-600">Class Teacher</label>
+                            @if($class->hasClassTeacher())
+                            <p class="text-gray-900">{{ $class->classTeacher->user->name }} <span class="text-sm text-gray-500">({{ $class->classTeacher->designation }})</span></p>
+                            @else
+                            <p class="text-gray-500 italic">No class teacher assigned</p>
+                            @endif
+                        </div>
+                        <div>
                             <label class="text-sm text-gray-600">Capacity</label>
                             <p class="text-gray-900">{{ $class->capacity }} Students</p>
                         </div>
@@ -96,6 +104,25 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <a href="{{ route('students.index', ['class_id' => $class->id]) }}"
+                       class="inline-flex items-center justify-center px-4 py-2 rounded-md border border-gray-200 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Bulk Enroll Students
+                    </a>
+                    <a href="{{ route('attendances.index', ['class_id' => $class->id]) }}"
+                       class="inline-flex items-center justify-center px-4 py-2 rounded-md border border-gray-200 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        View Attendance
+                    </a>
+                    <a href="{{ route('results.index', ['class_id' => $class->id]) }}"
+                       class="inline-flex items-center justify-center px-4 py-2 rounded-md border border-gray-200 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        View Results
+                    </a>
+                </div>
+            </div>
         </div>
 
         <!-- Students, Subjects, Exams -->
@@ -105,9 +132,18 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-900">Students ({{ $class->students->count() }})</h3>
                     @if(auth()->user()->role === 'admin')
-                    <a href="{{ route('students.create', ['class_id' => $class->id]) }}" class="text-blue-600 hover:text-blue-800 text-sm">
-                        + Enroll Student
-                    </a>
+                        <x-dropdown-menu align="right" width="sm">
+                            <x-slot name="trigger">
+                                <button class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                    + Enroll Student
+                                    <svg class="ml-2 h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </x-slot>
+                            <a href="{{ route('classes.enroll-student.form', $class) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Enroll Existing Student</a>
+                            <a href="{{ route('students.create', ['class_id' => $class->id]) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Register New Student</a>
+                        </x-dropdown-menu>
                     @endif
                 </div>
 
@@ -128,11 +164,32 @@
                                 <p class="text-sm text-gray-600">ID: {{ $student->student_id }}</p>
                             </div>
                         </div>
-                        <a href="{{ route('students.show', $student) }}" class="text-blue-600 hover:text-blue-800">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                            </svg>
-                        </a>
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('students.show', $student) }}" class="text-blue-600 hover:text-blue-800" title="View">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
+                            @if(auth()->user()->role === 'admin')
+                                <div>
+                                    <button type="button" class="text-red-600 hover:text-red-800" title="Unenroll" @click.prevent="window.dispatchEvent(new CustomEvent('open-unenroll-{{ $student->id }}'))">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6" />
+                                        </svg>
+                                    </button>
+                                    <x-confirm-delete-modal
+                                        openEvent="open-unenroll-{{ $student->id }}"
+                                        title="Unenroll Student"
+                                        message="Are you sure you want to unenroll this student from the class?"
+                                        confirmText="Unenroll"
+                                        cancelText="Cancel"
+                                        confirmButtonColor="red"
+                                        formAction="{{ route('classes.unenroll-student', [$class, $student]) }}"
+                                        formMethod="DELETE"
+                                    />
+                                </div>
+                            @endif
+                        </div>
                     </div>
                     @endforeach
                     
@@ -164,9 +221,18 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-900">Subjects ({{ $class->subjects->count() }})</h3>
                     @if(auth()->user()->role === 'admin')
-                    <a href="{{ route('subjects.create', ['class_id' => $class->id]) }}" class="text-blue-600 hover:text-blue-800 text-sm">
-                        + Add Subject
-                    </a>
+                        <x-dropdown-menu align="right" width="sm">
+                            <x-slot name="trigger">
+                                <button class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                    + Add Subject
+                                    <svg class="ml-2 h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </x-slot>
+                            <a href="{{ route('classes.assign-subject.form', $class) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Assign Existing Subject</a>
+                            <a href="{{ route('subjects.create', ['class_id' => $class->id]) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Create New Subject</a>
+                        </x-dropdown-menu>
                     @endif
                 </div>
 
@@ -176,9 +242,30 @@
                     <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
                         <div class="flex justify-between items-start mb-2">
                             <h4 class="font-semibold text-gray-900">{{ $subject->name }}</h4>
-                            <span class="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
-                                {{ $subject->code }}
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
+                                    {{ $subject->code }}
+                                </span>
+                                @if(auth()->user()->role === 'admin')
+                                    <div>
+                                        <button type="button" class="text-red-600 hover:text-red-800" title="Unassign Subject" @click.prevent="window.dispatchEvent(new CustomEvent('open-unassign-{{ $subject->id }}'))">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6" />
+                                            </svg>
+                                        </button>
+                                        <x-confirm-delete-modal
+                                            openEvent="open-unassign-{{ $subject->id }}"
+                                            title="Unassign Subject"
+                                            message="Are you sure you want to unassign this subject from the class?"
+                                            confirmText="Unassign"
+                                            cancelText="Cancel"
+                                            confirmButtonColor="red"
+                                            formAction="{{ route('classes.unassign-subject', [$class, $subject]) }}"
+                                            formMethod="DELETE"
+                                        />
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                         @if($subject->teacher)
                         <p class="text-sm text-gray-600">Teacher: {{ $subject->teacher->user->name }}</p>
@@ -256,6 +343,77 @@
                     </a>
                     @endif
                 </div>
+                @endif
+            </div>
+
+            <!-- Class Teacher Management Section -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Class Teacher Management</h3>
+                
+                @if(auth()->user()->role === 'admin')
+                    @if($class->hasClassTeacher())
+                        <!-- Display Current Class Teacher -->
+                        <div class="border border-gray-200 rounded-lg p-4 mb-3">
+                            <div class="flex items-center gap-3 mb-3">
+                                @if($class->classTeacher->user->avatar)
+                                <img class="h-12 w-12 rounded-full" src="{{ asset('storage/' . $class->classTeacher->user->avatar) }}" alt="{{ $class->classTeacher->user->name }}">
+                                @else
+                                <div class="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-lg">
+                                    {{ strtoupper(substr($class->classTeacher->user->name, 0, 1)) }}
+                                </div>
+                                @endif
+                                <div class="flex-1">
+                                    <p class="font-semibold text-gray-900">{{ $class->classTeacher->user->name }}</p>
+                                    <p class="text-sm text-gray-600">{{ $class->classTeacher->designation }}</p>
+                                    <p class="text-xs text-gray-500">ID: {{ $class->classTeacher->employee_id }}</p>
+                                </div>
+                            </div>
+                            <form action="{{ route('classes.remove-class-teacher', $class) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this class teacher?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-red-600 hover:text-red-800 text-sm font-medium">
+                                    Remove Class Teacher
+                                </button>
+                            </form>
+                        </div>
+                    @else
+                        <!-- Assign Class Teacher Form -->
+                        <p class="text-gray-500 mb-3">No class teacher assigned to this class.</p>
+                        <form action="{{ route('classes.assign-class-teacher', $class) }}" method="POST">
+                            @csrf
+                            <div class="mb-3">
+                                <select name="teacher_id" id="teacher_id" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="">Select a teacher</option>
+                                    @foreach($teachers ?? [] as $teacher)
+                                    <option value="{{ $teacher->id }}">{{ $teacher->user->name }} ({{ $teacher->designation }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                                Assign Class Teacher
+                            </button>
+                        </form>
+                    @endif
+                @else
+                    <!-- Read-only view for non-admin users -->
+                    @if($class->hasClassTeacher())
+                        <div class="flex items-center gap-3">
+                            @if($class->classTeacher->user->avatar)
+                            <img class="h-12 w-12 rounded-full" src="{{ asset('storage/' . $class->classTeacher->user->avatar) }}" alt="{{ $class->classTeacher->user->name }}">
+                            @else
+                            <div class="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-lg">
+                                {{ strtoupper(substr($class->classTeacher->user->name, 0, 1)) }}
+                            </div>
+                            @endif
+                            <div>
+                                <p class="font-semibold text-gray-900">{{ $class->classTeacher->user->name }}</p>
+                                <p class="text-sm text-gray-600">{{ $class->classTeacher->designation }}</p>
+                            </div>
+                        </div>
+                    @else
+                        <p class="text-gray-500 italic">No class teacher assigned</p>
+                    @endif
                 @endif
             </div>
         </div>

@@ -17,7 +17,7 @@
     <!-- Filter Card -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 class="text-lg font-semibold mb-4">Filter Materials</h2>
-        <form action="{{ route('study-materials.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <form action="{{ route('study-materials.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
                 <x-label for="content_type" value="Material Type" />
                 <x-select id="content_type" name="content_type" class="block mt-1 w-full">
@@ -51,6 +51,15 @@
                             {{ $subject->name }}
                         </option>
                     @endforeach
+                </x-select>
+            </div>
+
+            <div>
+                <x-label for="is_published" value="Status" />
+                <x-select id="is_published" name="is_published" class="block mt-1 w-full">
+                    <option value="">All</option>
+                    <option value="1" {{ request('is_published') === '1' ? 'selected' : '' }}>Published</option>
+                    <option value="0" {{ request('is_published') === '0' ? 'selected' : '' }}>Draft</option>
                 </x-select>
             </div>
             
@@ -101,7 +110,7 @@
                                 <h3 class="text-lg font-semibold text-gray-800 truncate" title="{{ $material->title }}">
                                     {{ $material->title }}
                                 </h3>
-                                <div>
+                                <div class="flex items-center gap-2">
                                     @if($material->is_published)
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                             Published
@@ -110,6 +119,15 @@
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                                             Draft
                                         </span>
+                                    @endif
+                                    @if(auth()->user()->isAdmin() || (isset($material->teacher) && $material->teacher->user && $material->teacher->user->id === auth()->id()))
+                                        <form method="POST" action="{{ route('study-materials.toggle-published', $material) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="inline-flex items-center px-2 py-1 border border-gray-300 rounded text-xs text-gray-700 bg-white hover:bg-gray-50">
+                                                {{ $material->is_published ? 'Unpublish' : 'Publish' }}
+                                            </button>
+                                        </form>
                                     @endif
                                 </div>
                             </div>
@@ -161,19 +179,43 @@
                                 <div class="text-xs text-gray-500">
                                     By: {{ $material->teacher->user->name }}
                                 </div>
-                                <div class="flex space-x-2">
-                                    <a href="{{ route('study-materials.show', $material->id) }}" class="text-blue-600 hover:text-blue-800">
+                                <div class="flex space-x-2 items-center">
+                                    <a href="{{ route('study-materials.show', $material->id) }}" class="text-blue-600 hover:text-blue-800" title="View">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>
                                     </a>
                                     @if($material->file_path)
-                                        <a href="{{ route('study-materials.download', $material->id) }}" class="text-green-600 hover:text-green-800">
+                                        <a href="{{ route('study-materials.download', $material->id) }}" class="text-green-600 hover:text-green-800" title="Download">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                             </svg>
                                         </a>
+                                    @endif
+                                    @if(auth()->user()->isAdmin() || (isset($material->teacher) && $material->teacher->user && $material->teacher->user->id === auth()->id()))
+                                        <a href="{{ route('study-materials.edit', $material) }}" class="text-yellow-600 hover:text-yellow-800" title="Edit">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                            </svg>
+                                        </a>
+                                        <div class="inline">
+                                            <button type="button" class="text-red-600 hover:text-red-800" title="Delete" @click.prevent="window.dispatchEvent(new CustomEvent('open-delete-material-{{ $material->id }}'))">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                            <x-confirm-delete-modal
+                                                openEvent="open-delete-material-{{ $material->id }}"
+                                                title="Delete Material"
+                                                message="Are you sure you want to delete this material?"
+                                                confirmText="Delete"
+                                                cancelText="Cancel"
+                                                confirmButtonColor="red"
+                                                formAction="{{ route('study-materials.destroy', $material) }}"
+                                                formMethod="DELETE"
+                                            />
+                                        </div>
                                     @endif
                                 </div>
                             </div>

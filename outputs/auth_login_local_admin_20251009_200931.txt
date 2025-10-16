@@ -1,0 +1,4 @@
+== Local admin login test (admin@local.test / Password123!) ==
+-- GET /login --
+Tokens: CSRF=HFRmicGGoAo9VL1l..., XSRF:yes
+-- POST /login (local admin) --

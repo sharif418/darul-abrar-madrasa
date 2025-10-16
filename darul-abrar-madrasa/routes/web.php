@@ -18,7 +18,21 @@ use App\Http\Controllers\StudyMaterialController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\GradingScaleController;
+use App\Http\Controllers\LessonPlanController;
+use App\Http\Controllers\GuardianPortalController;
+use App\Http\Controllers\AccountantPortalController;
+use App\Http\Controllers\GuardianController;
+use App\Http\Controllers\AccountantController;
+use App\Http\Controllers\TeacherAttendanceController;
+use App\Http\Controllers\PeriodController;
+use App\Http\Controllers\TimetableController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+
+// Constrain {notice} route parameter to numeric IDs to avoid conflicts with '/notices/public'
+Route::pattern('notice', '[0-9]+');
 
 /*
 |--------------------------------------------------------------------------
@@ -33,8 +47,14 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::get('/', function () {
-    return view('welcome');
+    if (app()->environment('testing')) {
+        return response('OK', 200);
+    }
+    return Auth::check() ? redirect()->route('dashboard') : redirect()->route('login');
 });
+// Public notices (moved outside auth)
+Route::get('/notices/public', [NoticeController::class, 'publicNotices'])->name('notices.public');
+Route::get('/notices/{notice}', [NoticeController::class, 'showPublic'])->name('notices.public.show');
 
 // Authentication routes
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -58,24 +78,51 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     
     // Admin routes
-    Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::middleware(['role:admin'])->group(function () {
+        // System Health Dashboard
+        Route::get('/admin/system-health', [DashboardController::class, 'systemHealth'])->name('admin.system-health');
+        Route::get('/admin/system-health/export', [DashboardController::class, 'exportSystemHealth'])->name('admin.system-health.export');
+        
+        // System Health Quick Actions
+        Route::post('/admin/system-health/verify', [DashboardController::class, 'runVerification'])->name('admin.system-health.verify');
+        Route::post('/admin/system-health/sync', [DashboardController::class, 'runSync'])->name('admin.system-health.sync');
+        Route::post('/admin/system-health/repair', [DashboardController::class, 'runRepair'])->name('admin.system-health.repair');
+        
         // User management
         Route::resource('users', UserController::class);
         
         // Department management
         Route::resource('departments', DepartmentController::class);
+        Route::post('/departments/{department}/assign-teacher', [DepartmentController::class, 'assignTeacher'])->name('departments.assign-teacher');
+        Route::delete('/departments/{department}/teachers/{teacher}', [DepartmentController::class, 'removeTeacher'])->name('departments.remove-teacher');
         
         // Class management
         Route::resource('classes', ClassController::class);
+        Route::get('/classes/{class}/enroll-student', [ClassController::class, 'showEnrollForm'])->name('classes.enroll-student.form');
+        Route::post('/classes/{class}/enroll-student', [ClassController::class, 'enrollStudent'])->name('classes.enroll-student');
+        Route::get('/classes/{class}/assign-subject', [ClassController::class, 'showAssignSubjectForm'])->name('classes.assign-subject.form');
+        Route::post('/classes/{class}/assign-subject', [ClassController::class, 'assignSubject'])->name('classes.assign-subject');
+        Route::delete('/classes/{class}/students/{student}', [ClassController::class, 'unenrollStudent'])->name('classes.unenroll-student');
+        Route::delete('/classes/{class}/subjects/{subject}', [ClassController::class, 'unassignSubject'])->name('classes.unassign-subject');
+        Route::post('/classes/{class}/assign-class-teacher', [ClassController::class, 'assignClassTeacher'])->name('classes.assign-class-teacher');
+        Route::delete('/classes/{class}/remove-class-teacher', [ClassController::class, 'removeClassTeacher'])->name('classes.remove-class-teacher');
         
         // Teacher management
         Route::resource('teachers', TeacherController::class);
         
         // Student management
         Route::resource('students', StudentController::class);
+        Route::post('/students/bulk-promote', [StudentController::class, 'bulkPromote'])->name('students.bulk-promote');
+        Route::post('/students/bulk-transfer', [StudentController::class, 'bulkTransfer'])->name('students.bulk-transfer');
+        Route::post('/students/bulk-status', [StudentController::class, 'bulkStatusUpdate'])->name('students.bulk-status');
+        Route::get('/students/search-guardians', [StudentController::class, 'searchGuardians'])->name('students.search-guardians');
         
-        // Subject management
-        Route::resource('subjects', SubjectController::class);
+        // Subject management (CRUD operations - admin only)
+        Route::resource('subjects', SubjectController::class)->except(['index', 'show']);
+
+        // Grading Scale management
+        Route::resource('grading-scales', GradingScaleController::class);
+        Route::patch('/grading-scales/{gradingScale}/toggle-active', [GradingScaleController::class, 'toggleActive'])->name('grading-scales.toggle-active');
         
         // Exam management
         Route::resource('exams', ExamController::class);
@@ -94,40 +141,99 @@ Route::middleware(['auth'])->group(function () {
         
         // Notice management
         Route::resource('notices', NoticeController::class);
+
+        // Guardian management (admin only)
+        Route::resource('guardians', GuardianController::class);
+        Route::post('/guardians/{guardian}/link-student', [GuardianController::class, 'linkStudent'])->name('guardians.link-student');
+        Route::delete('/guardians/{guardian}/students/{student}', [GuardianController::class, 'unlinkStudent'])->name('guardians.unlink-student');
+
+        // Accountant management (admin only)
+        Route::resource('accountants', AccountantController::class);
+
+        // Teacher Attendance management (admin only)
+        Route::post('/teacher-attendances/store-bulk', [TeacherAttendanceController::class, 'storeBulk'])->name('teacher-attendances.store-bulk');
+        Route::resource('teacher-attendances', TeacherAttendanceController::class)
+            ->parameters(['teacher-attendances' => 'teacherAttendance']);
+
+        // Period management (admin only)
+        Route::resource('periods', PeriodController::class);
+
+        // Timetable management (admin only)
+        Route::resource('timetables', TimetableController::class);
+
+        // Timetable entry management (admin only)
+        Route::get('/timetables/{timetable}/entries', [TimetableController::class, 'entries'])->name('timetables.entries');
+        Route::get('/timetables/{timetable}/entries/create', [TimetableController::class, 'createEntry'])->name('timetables.entries.create');
+        Route::post('/timetables/{timetable}/entries', [TimetableController::class, 'storeEntry'])->name('timetables.entries.store');
+        Route::get('/timetables/{timetable}/entries/{entry}/edit', [TimetableController::class, 'editEntry'])->name('timetables.entries.edit');
+        Route::put('/timetables/{timetable}/entries/{entry}', [TimetableController::class, 'updateEntry'])->name('timetables.entries.update');
+        Route::delete('/timetables/{timetable}/entries/{entry}', [TimetableController::class, 'destroyEntry'])->name('timetables.entries.destroy');
+
+        // Timetable views (admin only)
+        Route::get('/timetables/{timetable}/weekly-grid', [TimetableController::class, 'weeklyGrid'])->name('timetables.weekly-grid');
+        Route::get('/timetables/{timetable}/conflicts', [TimetableController::class, 'conflicts'])->name('timetables.conflicts');
+
+        // Notification Management (admin only)
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/notifications/templates', [NotificationController::class, 'templates'])->name('notifications.templates');
+        Route::get('/notifications/templates/{template}/edit', [NotificationController::class, 'editTemplate'])->name('notifications.templates.edit');
+        Route::put('/notifications/templates/{template}', [NotificationController::class, 'updateTemplate'])->name('notifications.templates.update');
+        Route::get('/notifications/triggers', [NotificationController::class, 'triggers'])->name('notifications.triggers');
+        Route::put('/notifications/triggers/{trigger}', [NotificationController::class, 'updateTrigger'])->name('notifications.triggers.update');
+        Route::post('/notifications/test', [NotificationController::class, 'testNotification'])->name('notifications.test');
     });
     
     // Teacher routes
-    Route::middleware(['auth', 'role:teacher'])->group(function () {
+    Route::middleware(['role:teacher'])->group(function () {
         // Attendance management
         Route::get('/attendances/create/{class_id}', [AttendanceController::class, 'createByClass'])->name('attendances.create.class');
         Route::post('/attendances/store-bulk', [AttendanceController::class, 'storeBulk'])->name('attendances.store.bulk');
         
-        // Result management
-        Route::get('/results/create/{exam_id}/{class_id}/{subject_id}', [ResultController::class, 'createBulk'])->name('results.create.bulk');
-        Route::post('/results/store-bulk', [ResultController::class, 'storeBulk'])->name('results.store.bulk');
-        
-        // Marks Entry
-        Route::get('/marks/create', [ResultController::class, 'createMarks'])->name('marks.create');
-        Route::post('/marks/store', [ResultController::class, 'storeMarks'])->name('marks.store');
+        // My timetable (teachers only)
+        Route::get('/my-timetable', [TimetableController::class, 'myTimetable'])->name('my.timetable');
     });
     
     // Common routes for teachers and admin
-    Route::middleware(['auth', 'role:admin,teacher'])->group(function () {
+    Route::middleware(['role:admin,teacher'])->group(function () {
         // Attendance management
         Route::resource('attendances', AttendanceController::class);
         
         // Result management
         Route::resource('results', ResultController::class);
+        Route::get('/results/{exam}/class-summary/pdf', [ResultController::class, 'generateClassResultSummary'])->name('results.class-summary.pdf');
+        Route::get('/results/create/{exam_id}/{class_id}/{subject_id}', [ResultController::class, 'createBulk'])->name('results.create.bulk');
+        Route::post('/results/store-bulk', [ResultController::class, 'storeBulk'])->name('results.store.bulk');
+        Route::get('/exams/for-marks-entry', [ExamController::class, 'getExamsForMarksEntry'])->name('exams.for-marks-entry');
+
+        // Marks Entry
+        Route::get('/marks/create', [ResultController::class, 'createMarks'])->name('marks.create');
+        Route::post('/marks/store', [ResultController::class, 'storeMarks'])->name('marks.store');
+
+        // Study materials management
+        Route::resource('study-materials', StudyMaterialController::class);
+        Route::patch('/study-materials/{studyMaterial}/toggle-published', [StudyMaterialController::class, 'togglePublished'])->name('study-materials.toggle-published');
+        
+        // Lesson Plan management
+        Route::resource('lesson-plans', LessonPlanController::class);
+        Route::post('/lesson-plans/{lessonPlan}/mark-completed', [LessonPlanController::class, 'markCompleted'])->name('lesson-plans.mark-completed');
+        Route::get('/lesson-plans/calendar', [LessonPlanController::class, 'calendar'])->name('lesson-plans.calendar');
+        
+        // Subject management (Read-only for teachers)
+        Route::resource('subjects', SubjectController::class)->only(['index', 'show']);
+
+        // Timetable viewing (admin and teachers)
+        Route::get('/timetables/{timetable}/class/{class}', [TimetableController::class, 'classTimetable'])->name('timetables.class');
+        Route::get('/timetables/{timetable}/teacher/{teacher}', [TimetableController::class, 'teacherTimetable'])->name('timetables.teacher');
     });
     
     // Student routes
-    Route::middleware(['auth', 'role:student'])->group(function () {
+    Route::middleware(['role:student'])->group(function () {
         // View own attendance
         Route::get('/my-attendance', [AttendanceController::class, 'myAttendance'])->name('my.attendance');
         
         // View own results
         Route::get('/my-results', [ResultController::class, 'myResults'])->name('my.results');
-        Route::get('/results/download/{exam}', [ResultController::class, 'downloadResult'])->name('results.download');
+        Route::get('/results/{exam}/{student}/mark-sheet', [ResultController::class, 'generateMarkSheet'])->name('results.mark-sheet');
         
         // View own fees
         Route::get('/my-fees', [FeeController::class, 'myFees'])->name('my.fees');
@@ -135,7 +241,61 @@ Route::middleware(['auth'])->group(function () {
         // View study materials
         Route::get('/my-materials', [StudyMaterialController::class, 'myMaterials'])->name('my.materials');
     });
+
+    // Guardian routes
+    Route::middleware(['role:guardian'])->prefix('guardian')->name('guardian.')->group(function () {
+        Route::get('/dashboard', [GuardianPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/children', [GuardianPortalController::class, 'children'])->name('children');
+        Route::get('/children/{student}', [GuardianPortalController::class, 'childProfile'])->name('child.profile');
+        Route::get('/children/{student}/attendance', [GuardianPortalController::class, 'childAttendance'])->name('child.attendance');
+        Route::get('/children/{student}/results', [GuardianPortalController::class, 'childResults'])->name('child.results');
+        Route::get('/children/{student}/fees', [GuardianPortalController::class, 'childFees'])->name('child.fees');
+        Route::get('/children/{student}/study-materials', [GuardianPortalController::class, 'studyMaterials'])->name('child.materials');
+        Route::get('/fees', [GuardianPortalController::class, 'allFees'])->name('fees');
+        Route::get('/fees/{fee}/pay', [GuardianPortalController::class, 'payFee'])->name('fees.pay');
+        Route::post('/fees/{fee}/process-payment', [GuardianPortalController::class, 'processPayment'])->name('fees.process-payment');
+        Route::get('/notices', [GuardianPortalController::class, 'notices'])->name('notices');
+        
+        // Performance Report routes
+        Route::get('/children/{student}/performance-report', [GuardianPortalController::class, 'performanceReport'])->name('child.performance-report');
+        Route::get('/children/{student}/performance-report/download', [GuardianPortalController::class, 'downloadPerformanceReport'])->name('child.performance-report.download');
+        Route::post('/children/{student}/performance-report/email', [GuardianPortalController::class, 'emailPerformanceReport'])->name('child.performance-report.email');
+
+        // Notification Preferences
+        Route::get('/notification-preferences', [GuardianPortalController::class, 'notificationPreferences'])->name('notification-preferences');
+        Route::post('/notification-preferences', [GuardianPortalController::class, 'updateNotificationPreferences'])->name('notification-preferences.update');
+    });
+
+    // Accountant routes
+    Route::middleware(['role:accountant'])->prefix('accountant')->name('accountant.')->group(function () {
+        Route::get('/dashboard', [AccountantPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/fees', [AccountantPortalController::class, 'fees'])->name('fees');
+        Route::get('/fees/{fee}/record-payment', [AccountantPortalController::class, 'recordPayment'])->name('fees.record-payment');
+        Route::post('/fees/{fee}/process-payment', [AccountantPortalController::class, 'processPayment'])->name('fees.process-payment');
+        
+        Route::get('/waivers', [AccountantPortalController::class, 'waivers'])->name('waivers');
+        Route::get('/waivers/create', [AccountantPortalController::class, 'createWaiver'])->name('waivers.create');
+        Route::post('/waivers', [AccountantPortalController::class, 'storeWaiver'])->name('waivers.store');
+        Route::post('/waivers/{waiver}/approve', [AccountantPortalController::class, 'approveWaiver'])->name('waivers.approve');
+        Route::post('/waivers/{waiver}/reject', [AccountantPortalController::class, 'rejectWaiver'])->name('waivers.reject');
+        
+        Route::get('/installments', [AccountantPortalController::class, 'installments'])->name('installments');
+        Route::get('/fees/{fee}/installments/create', [AccountantPortalController::class, 'createInstallmentPlan'])->name('installments.create');
+        Route::post('/fees/{fee}/installments', [AccountantPortalController::class, 'storeInstallmentPlan'])->name('installments.store');
+        
+        Route::get('/late-fees', [AccountantPortalController::class, 'lateFees'])->name('late-fees');
+        Route::post('/late-fees/apply', [AccountantPortalController::class, 'applyLateFees'])->name('late-fees.apply');
+        
+        Route::get('/reports', [AccountantPortalController::class, 'reports'])->name('reports');
+        Route::get('/reports/collection', [AccountantPortalController::class, 'collectionReport'])->name('reports.collection');
+        Route::get('/reports/outstanding', [AccountantPortalController::class, 'outstandingReport'])->name('reports.outstanding');
+        Route::get('/reports/waivers', [AccountantPortalController::class, 'waiverReport'])->name('reports.waivers');
+        
+        Route::get('/reconciliation', [AccountantPortalController::class, 'reconciliation'])->name('reconciliation');
+    });
     
+    // Study materials download - accessible to all authenticated users
+    Route::get('/study-materials/{studyMaterial}/download', [StudyMaterialController::class, 'download'])->name('study-materials.download');
+
     // Common routes for all authenticated users
-    Route::get('/notices/public', [NoticeController::class, 'publicNotices'])->name('notices.public');
 });

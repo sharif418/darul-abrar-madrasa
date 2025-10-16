@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreSubjectRequest;
+use App\Http\Requests\UpdateSubjectRequest;
 use App\Models\Subject;
 use App\Models\ClassRoom;
 use App\Models\Teacher;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 
 class SubjectController extends Controller
 {
@@ -15,37 +17,56 @@ class SubjectController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Subject::with(['class.department', 'teacher.user']);
+        try {
+            $query = Subject::with(['class.department', 'teacher.user']);
 
-        // Search functionality
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
-            });
+            // If teacher, only show subjects assigned to them
+            $user = auth()->user();
+            if ($user->isTeacher()) {
+                if (!$user->teacher) {
+                    Log::error('Teacher record missing for user accessing subjects', ['user_id' => $user->id, 'email' => $user->email]);
+                    return redirect()->route('dashboard')->with('error', 'Your teacher profile is incomplete. Please contact the administrator.');
+                }
+                $query->where('teacher_id', $user->teacher->id);
+            }
+
+            // Search functionality
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('code', 'like', "%{$search}%");
+                });
+            }
+
+            // Filter by class
+            if ($request->filled('class_id')) {
+                $query->where('class_id', $request->class_id);
+            }
+
+            // Filter by teacher
+            if ($request->filled('teacher_id')) {
+                $query->where('teacher_id', $request->teacher_id);
+            }
+
+            // Filter by status
+            if ($request->filled('is_active')) {
+                $query->where('is_active', $request->is_active);
+            }
+
+            $subjects = $query->latest()->paginate(15);
+            $classes = ClassRoom::where('is_active', true)->with('department')->get();
+            $teachers = Teacher::where('is_active', true)->with('user')->get();
+
+            return view('subjects.index', compact('subjects', 'classes', 'teachers'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load subjects list', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to load subjects. Please try again.');
         }
-
-        // Filter by class
-        if ($request->filled('class_id')) {
-            $query->where('class_id', $request->class_id);
-        }
-
-        // Filter by teacher
-        if ($request->filled('teacher_id')) {
-            $query->where('teacher_id', $request->teacher_id);
-        }
-
-        // Filter by status
-        if ($request->filled('is_active')) {
-            $query->where('is_active', $request->is_active);
-        }
-
-        $subjects = $query->latest()->paginate(15);
-        $classes = ClassRoom::where('is_active', true)->with('department')->get();
-        $teachers = Teacher::where('is_active', true)->with('user')->get();
-
-        return view('subjects.index', compact('subjects', 'classes', 'teachers'));
     }
 
     /**
@@ -61,25 +82,30 @@ class SubjectController extends Controller
     /**
      * Store a newly created subject in storage.
      */
-    public function store(Request $request)
+    public function store(StoreSubjectRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:subjects',
-            'class_id' => 'required|exists:classes,id',
-            'teacher_id' => 'nullable|exists:teachers,id',
-            'full_mark' => 'required|integer|min:1',
-            'pass_mark' => 'required|integer|min:1|lt:full_mark',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
+        try {
+            $data = $request->validated();
+            $data['is_active'] = $request->has('is_active') ? 1 : 0;
 
-        $validated['is_active'] = $request->has('is_active') ? 1 : 0;
+            $subject = Subject::create($data);
 
-        Subject::create($validated);
+            Log::info('Subject created successfully', [
+                'subject_id' => $subject->id,
+                'user_id' => auth()->id(),
+            ]);
 
-        return redirect()->route('subjects.index')
-            ->with('success', 'Subject created successfully.');
+            return redirect()->route('subjects.index')
+                ->with('success', 'Subject created successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to create subject', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'data' => $request->validated(),
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to create subject. Please try again.');
+        }
     }
 
     /**
@@ -87,12 +113,41 @@ class SubjectController extends Controller
      */
     public function show(Subject $subject)
     {
-        $subject->load(['class.department', 'teacher.user', 'results.student.user']);
-        
-        // Get students enrolled in this subject's class
-        $students = $subject->class->students()->with('user')->get();
+        try {
+            // Authorization: Teachers can only view subjects assigned to them
+            $user = auth()->user();
+            if ($user->isTeacher()) {
+                if (!$user->teacher) {
+                    Log::error('Teacher record missing for user accessing subject', ['user_id' => $user->id, 'email' => $user->email, 'subject_id' => $subject->id]);
+                    return redirect()->route('dashboard')->with('error', 'Your teacher profile is incomplete. Please contact the administrator.');
+                }
+                
+                if ($subject->teacher_id !== $user->teacher->id) {
+                    Log::warning('Teacher attempted to access unauthorized subject', [
+                        'user_id' => $user->id,
+                        'teacher_id' => $user->teacher->id,
+                        'subject_id' => $subject->id,
+                        'subject_teacher_id' => $subject->teacher_id
+                    ]);
+                    abort(403, 'You are not authorized to view this subject.');
+                }
+            }
+            
+            $subject->load(['class.department', 'teacher.user', 'results.student.user']);
+            
+            // Get students enrolled in this subject's class
+            $students = $subject->class->students()->with('user')->get();
 
-        return view('subjects.show', compact('subject', 'students'));
+            return view('subjects.show', compact('subject', 'students'));
+        } catch (\Exception $e) {
+            Log::error('Failed to load subject details', [
+                'subject_id' => $subject->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to load subject details. Please try again.');
+        }
     }
 
     /**
@@ -108,25 +163,31 @@ class SubjectController extends Controller
     /**
      * Update the specified subject in storage.
      */
-    public function update(Request $request, Subject $subject)
+    public function update(UpdateSubjectRequest $request, Subject $subject)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => ['required', 'string', 'max:50', Rule::unique('subjects')->ignore($subject->id)],
-            'class_id' => 'required|exists:classes,id',
-            'teacher_id' => 'nullable|exists:teachers,id',
-            'full_mark' => 'required|integer|min:1',
-            'pass_mark' => 'required|integer|min:1|lt:full_mark',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-        ]);
+        try {
+            $data = $request->validated();
+            $data['is_active'] = $request->has('is_active') ? 1 : 0;
 
-        $validated['is_active'] = $request->has('is_active') ? 1 : 0;
+            $subject->update($data);
 
-        $subject->update($validated);
+            Log::info('Subject updated successfully', [
+                'subject_id' => $subject->id,
+                'user_id' => auth()->id(),
+            ]);
 
-        return redirect()->route('subjects.index')
-            ->with('success', 'Subject updated successfully.');
+            return redirect()->route('subjects.index')
+                ->with('success', 'Subject updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to update subject', [
+                'subject_id' => $subject->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'data' => $request->validated(),
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to update subject. Please try again.');
+        }
     }
 
     /**
@@ -134,15 +195,37 @@ class SubjectController extends Controller
      */
     public function destroy(Subject $subject)
     {
-        // Check if subject has results
-        if ($subject->results()->count() > 0) {
+        try {
+            // Check if subject has results
+            if ($subject->results()->count() > 0) {
+                Log::warning('Attempted to delete subject with existing results', [
+                    'subject_id' => $subject->id,
+                    'results_count' => $subject->results()->count(),
+                    'user_id' => auth()->id(),
+                ]);
+
+                return redirect()->route('subjects.index')
+                    ->with('error', 'Cannot delete subject with existing results. Please remove results first.');
+            }
+
+            $subjectId = $subject->id;
+            $subject->delete();
+
+            Log::info('Subject deleted successfully', [
+                'subject_id' => $subjectId,
+                'user_id' => auth()->id(),
+            ]);
+
             return redirect()->route('subjects.index')
-                ->with('error', 'Cannot delete subject with existing results. Please remove results first.');
+                ->with('success', 'Subject deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to delete subject', [
+                'subject_id' => $subject->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to delete subject. Please try again.');
         }
-
-        $subject->delete();
-
-        return redirect()->route('subjects.index')
-            ->with('success', 'Subject deleted successfully.');
     }
 }

@@ -15,9 +15,10 @@ class StudyMaterialController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+public function index(Request $request)
     {
         $user = Auth::user();
+        $this->authorize('viewAny', StudyMaterial::class);
         $query = StudyMaterial::with(['teacher', 'class', 'subject']);
         
         // If teacher, only show their study materials
@@ -69,6 +70,7 @@ class StudyMaterialController extends Controller
     public function create()
     {
         $user = Auth::user();
+        $this->authorize('create', StudyMaterial::class);
         
         if ($user->isTeacher()) {
             $teacher = $user->teacher;
@@ -113,6 +115,7 @@ class StudyMaterialController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
+        $this->authorize('create', StudyMaterial::class);
         
         $validationRules = [
             'title' => 'required|string|max:255',
@@ -185,19 +188,8 @@ class StudyMaterialController extends Controller
     public function show(StudyMaterial $studyMaterial)
     {
         $user = Auth::user();
-        
-        // Check if the user is authorized to view this study material
-        if ($user->isTeacher() && $user->teacher->id != $studyMaterial->teacher_id) {
-            abort(403, 'Unauthorized action.');
-        }
-        
-        // If student, check if the material is published and for their class
-        if ($user->isStudent()) {
-            if (!$studyMaterial->is_published || $user->student->class_id != $studyMaterial->class_id) {
-                abort(403, 'Unauthorized action.');
-            }
-        }
-        
+        $this->authorize('view', $studyMaterial);
+
         return view('academic.study_materials.show', compact('studyMaterial'));
     }
 
@@ -207,11 +199,7 @@ class StudyMaterialController extends Controller
     public function edit(StudyMaterial $studyMaterial)
     {
         $user = Auth::user();
-        
-        // Check if the user is authorized to edit this study material
-        if ($user->isTeacher() && $user->teacher->id != $studyMaterial->teacher_id) {
-            abort(403, 'Unauthorized action.');
-        }
+        $this->authorize('update', $studyMaterial);
         
         if ($user->isTeacher()) {
             $teacher = $user->teacher;
@@ -256,11 +244,7 @@ class StudyMaterialController extends Controller
     public function update(Request $request, StudyMaterial $studyMaterial)
     {
         $user = Auth::user();
-        
-        // Check if the user is authorized to update this study material
-        if ($user->isTeacher() && $user->teacher->id != $studyMaterial->teacher_id) {
-            abort(403, 'Unauthorized action.');
-        }
+        $this->authorize('update', $studyMaterial);
         
         $validationRules = [
             'title' => 'required|string|max:255',
@@ -335,11 +319,7 @@ class StudyMaterialController extends Controller
     public function destroy(StudyMaterial $studyMaterial)
     {
         $user = Auth::user();
-        
-        // Check if the user is authorized to delete this study material
-        if ($user->isTeacher() && $user->teacher->id != $studyMaterial->teacher_id) {
-            abort(403, 'Unauthorized action.');
-        }
+        $this->authorize('delete', $studyMaterial);
         
         // Delete file if exists
         if ($studyMaterial->file_path) {
@@ -358,25 +338,16 @@ class StudyMaterialController extends Controller
     public function download(StudyMaterial $studyMaterial)
     {
         $user = Auth::user();
-        
-        // Check if the user is authorized to download this study material
-        if ($user->isTeacher() && $user->teacher->id != $studyMaterial->teacher_id) {
-            abort(403, 'Unauthorized action.');
-        }
-        
-        // If student, check if the material is published and for their class
-        if ($user->isStudent()) {
-            if (!$studyMaterial->is_published || $user->student->class_id != $studyMaterial->class_id) {
-                abort(403, 'Unauthorized action.');
-            }
-        }
+        $this->authorize('download', $studyMaterial);
         
         // Check if file exists
         if (!$studyMaterial->file_path || !Storage::disk('public')->exists($studyMaterial->file_path)) {
             abort(404, 'File not found.');
         }
         
-        return Storage::disk('public')->download($studyMaterial->file_path, $studyMaterial->title . '.' . $studyMaterial->fileExtension);
+        $ext = pathinfo($studyMaterial->file_path, PATHINFO_EXTENSION);
+        $filename = $ext ? ($studyMaterial->title . '.' . $ext) : basename($studyMaterial->file_path);
+        return Storage::disk('public')->download($studyMaterial->file_path, $filename);
     }
     
     /**
@@ -385,11 +356,7 @@ class StudyMaterialController extends Controller
     public function togglePublished(StudyMaterial $studyMaterial)
     {
         $user = Auth::user();
-        
-        // Check if the user is authorized to update this study material
-        if ($user->isTeacher() && $user->teacher->id != $studyMaterial->teacher_id) {
-            abort(403, 'Unauthorized action.');
-        }
+        $this->authorize('togglePublished', $studyMaterial);
         
         $studyMaterial->update([
             'is_published' => !$studyMaterial->is_published

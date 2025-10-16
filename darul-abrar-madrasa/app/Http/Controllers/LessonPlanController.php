@@ -8,6 +8,7 @@ use App\Models\Subject;
 use App\Models\Teacher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class LessonPlanController extends Controller
 {
@@ -21,6 +22,10 @@ class LessonPlanController extends Controller
         
         // If teacher, only show their lesson plans
         if ($user->isTeacher()) {
+            if (!$user->teacher) {
+                Log::error('Teacher record missing for user', ['user_id' => $user->id, 'email' => $user->email]);
+                return redirect()->route('dashboard')->with('error', 'Your teacher profile is incomplete. Please contact the administrator to complete your profile setup.');
+            }
             $teacherId = $user->teacher->id;
             $query->where('teacher_id', $teacherId);
         }
@@ -63,6 +68,10 @@ class LessonPlanController extends Controller
         $user = Auth::user();
         
         if ($user->isTeacher()) {
+            if (!$user->teacher) {
+                Log::error('Teacher record missing for user', ['user_id' => $user->id, 'email' => $user->email]);
+                return redirect()->route('dashboard')->with('error', 'Your teacher profile is incomplete. Please contact the administrator to complete your profile setup.');
+            }
             $teacher = $user->teacher;
             $teacherId = $teacher->id;
             
@@ -98,6 +107,10 @@ class LessonPlanController extends Controller
         
         // If teacher, use their ID
         if ($user->isTeacher()) {
+            if (!$user->teacher) {
+                Log::error('Teacher record missing for user attempting to create lesson plan', ['user_id' => $user->id, 'email' => $user->email]);
+                return redirect()->route('lesson-plans.index')->with('error', 'Your teacher profile is incomplete. Please contact the administrator.');
+            }
             $request->merge(['teacher_id' => $user->teacher->id]);
             $validationRules['class_id'] = 'required|exists:classes,id';
             $validationRules['subject_id'] = [
@@ -105,7 +118,7 @@ class LessonPlanController extends Controller
                 'exists:subjects,id',
                 function ($attribute, $value, $fail) use ($request, $user) {
                     $subject = Subject::find($value);
-                    if ($subject && $subject->teacher_id != $user->teacher->id) {
+                    if ($subject && $user->teacher && $subject->teacher_id != $user->teacher->id) {
                         $fail('You can only create lesson plans for subjects assigned to you.');
                     }
                 }
@@ -142,8 +155,14 @@ class LessonPlanController extends Controller
         $user = Auth::user();
         
         // Check if the user is authorized to view this lesson plan
-        if ($user->isTeacher() && $user->teacher->id != $lessonPlan->teacher_id) {
-            abort(403, 'Unauthorized action.');
+        if ($user->isTeacher()) {
+            if (!$user->teacher) {
+                Log::error('Teacher record missing for user attempting to view lesson plan', ['user_id' => $user->id, 'lesson_plan_id' => $lessonPlan->id]);
+                return redirect()->route('lesson-plans.index')->with('error', 'Your teacher profile is incomplete. Please contact the administrator.');
+            }
+            if ($user->teacher->id != $lessonPlan->teacher_id) {
+                abort(403, 'Unauthorized action.');
+            }
         }
         
         return view('academic.lesson_plans.show', compact('lessonPlan'));
@@ -157,11 +176,15 @@ class LessonPlanController extends Controller
         $user = Auth::user();
         
         // Check if the user is authorized to edit this lesson plan
-        if ($user->isTeacher() && $user->teacher->id != $lessonPlan->teacher_id) {
+        if ($user->isTeacher() && optional($user->teacher)->id != $lessonPlan->teacher_id) {
             abort(403, 'Unauthorized action.');
         }
         
         if ($user->isTeacher()) {
+            if (!$user->teacher) {
+                Log::error('Teacher record missing for user attempting to edit lesson plan', ['user_id' => $user->id, 'lesson_plan_id' => $lessonPlan->id]);
+                return redirect()->route('lesson-plans.index')->with('error', 'Your teacher profile is incomplete. Please contact the administrator.');
+            }
             $teacher = $user->teacher;
             $teacherId = $teacher->id;
             
@@ -188,7 +211,7 @@ class LessonPlanController extends Controller
         $user = Auth::user();
         
         // Check if the user is authorized to update this lesson plan
-        if ($user->isTeacher() && $user->teacher->id != $lessonPlan->teacher_id) {
+        if ($user->isTeacher() && optional($user->teacher)->id != $lessonPlan->teacher_id) {
             abort(403, 'Unauthorized action.');
         }
         
@@ -202,6 +225,10 @@ class LessonPlanController extends Controller
         
         // If teacher, use their ID
         if ($user->isTeacher()) {
+            if (!$user->teacher) {
+                Log::error('Teacher record missing for user attempting to update lesson plan', ['user_id' => $user->id, 'lesson_plan_id' => $lessonPlan->id]);
+                return redirect()->route('lesson-plans.index')->with('error', 'Your teacher profile is incomplete. Please contact the administrator.');
+            }
             $request->merge(['teacher_id' => $user->teacher->id]);
             $validationRules['class_id'] = 'required|exists:classes,id';
             $validationRules['subject_id'] = [
@@ -209,7 +236,7 @@ class LessonPlanController extends Controller
                 'exists:subjects,id',
                 function ($attribute, $value, $fail) use ($request, $user) {
                     $subject = Subject::find($value);
-                    if ($subject && $subject->teacher_id != $user->teacher->id) {
+                    if ($subject && $user->teacher && $subject->teacher_id != $user->teacher->id) {
                         $fail('You can only create lesson plans for subjects assigned to you.');
                     }
                 }
@@ -246,8 +273,14 @@ class LessonPlanController extends Controller
         $user = Auth::user();
         
         // Check if the user is authorized to delete this lesson plan
-        if ($user->isTeacher() && $user->teacher->id != $lessonPlan->teacher_id) {
-            abort(403, 'Unauthorized action.');
+        if ($user->isTeacher()) {
+            if (!$user->teacher) {
+                Log::error('Teacher record missing for user attempting to delete lesson plan', ['user_id' => $user->id, 'lesson_plan_id' => $lessonPlan->id]);
+                return redirect()->route('lesson-plans.index')->with('error', 'Your teacher profile is incomplete. Please contact the administrator.');
+            }
+            if ($user->teacher->id != $lessonPlan->teacher_id) {
+                abort(403, 'Unauthorized action.');
+            }
         }
         
         $lessonPlan->delete();
@@ -264,8 +297,14 @@ class LessonPlanController extends Controller
         $user = Auth::user();
         
         // Check if the user is authorized to update this lesson plan
-        if ($user->isTeacher() && $user->teacher->id != $lessonPlan->teacher_id) {
-            abort(403, 'Unauthorized action.');
+        if ($user->isTeacher()) {
+            if (!$user->teacher) {
+                Log::error('Teacher record missing for user attempting to mark lesson plan completed', ['user_id' => $user->id, 'lesson_plan_id' => $lessonPlan->id]);
+                return redirect()->route('lesson-plans.index')->with('error', 'Your teacher profile is incomplete. Please contact the administrator.');
+            }
+            if ($user->teacher->id != $lessonPlan->teacher_id) {
+                abort(403, 'Unauthorized action.');
+            }
         }
         
         $request->validate([
@@ -306,6 +345,10 @@ class LessonPlanController extends Controller
         $user = Auth::user();
         
         if ($user->isTeacher()) {
+            if (!$user->teacher) {
+                Log::error('Teacher record missing for user accessing calendar', ['user_id' => $user->id]);
+                return redirect()->route('dashboard')->with('error', 'Your teacher profile is incomplete. Please contact the administrator.');
+            }
             $teacherId = $user->teacher->id;
             $lessonPlans = LessonPlan::where('teacher_id', $teacherId)->get();
         } else {

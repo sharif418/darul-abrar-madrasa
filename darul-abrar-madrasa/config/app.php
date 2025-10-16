@@ -123,4 +123,17 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Administrator Contact Email
+    |--------------------------------------------------------------------------
+    |
+    | This email address is used in error messages and user notifications
+    | when users need to contact the system administrator for support.
+    | This allows environment-specific customization via the .env file.
+    |
+    */
+
+    'admin_email' => env('ADMIN_EMAIL', 'admin@darulabrar.edu'),
+
 ];

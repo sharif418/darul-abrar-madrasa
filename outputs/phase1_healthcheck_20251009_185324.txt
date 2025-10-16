@@ -1,0 +1,43 @@
+=== Phase 1 Full Health Check ===
+------------------------------------------------------------
+1) Login as admin
+   CSRF: GYF2l8Uj9Qk7yZBD...
+   Login HTTP: 302
+------------------------------------------------------------
+2) GET endpoints (expect 200)
+Dashboard                      /dashboard                       => 200 
+Teachers index                 /teachers                        => 200 
+Teachers create                /teachers/create                 => 200 
+Students index                 /students                        => 200 
+Students create                /students/create                 => 200 
+Departments index              /departments                     => 200 
+Departments create             /departments/create              => 200 
+Classes index                  /classes                         => 200 
+Classes create                 /classes/create                  => 200 
+Subjects index                 /subjects                        => 200 
+Subjects create                /subjects/create                 => 200 
+Users index                    /users                           => 200 
+Users create                   /users/create                    => 200 
+Fees index                     /fees                            => 200 
+Fees create                    /fees/create                     => 200 
+Fees reports index             /fees-reports                    => 200 
+Fees collection report         /fees-reports/collection         => 200 
+Fees outstanding report        /fees-reports/outstanding        => 200 
+Attendances index              /attendances                     => 200 
+Exams index                    /exams                           => 200 
+Results index                  /results                         => 200 
+Notices index                  /notices                         => 200 
+Notices create                 /notices/create                  => 200 
+Notices public                 /notices/public                  => 200 
+------------------------------------------------------------
+3) POST sanity creates (expect 302 redirect on success)
+   Department create HTTP: 419
+   Teacher create HTTP: 419
+   Notice create HTTP: 419
+------------------------------------------------------------
+4) Fees reports re-check (expect 200)
+Fees collection report         /fees-reports/collection         => 200 (login page)
+Fees outstanding report        /fees-reports/outstanding        => 200 (login page)
+------------------------------------------------------------
+5) Role-protected core pages OK if above are 200. For deep CRUD/validation and PDFs, proceed interactively if needed.
+=== End of Health Check ===

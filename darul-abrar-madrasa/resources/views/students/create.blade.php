@@ -109,8 +109,20 @@
                 </div>
                 
                 <div class="mb-4">
-                    <label for="guardian_email" class="block text-gray-700 text-sm font-bold mb-2">Guardian's Email</label>
-                    <input type="email" name="guardian_email" id="guardian_email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('guardian_email') border-red-500 @enderror" value="{{ old('guardian_email') }}">
+                    <label for="guardian_email" class="block text-gray-700 text-sm font-bold mb-2">Guardian's Email *</label>
+                    <input type="email" name="guardian_email" id="guardian_email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('guardian_email') border-red-500 @enderror" value="{{ old('guardian_email') }}" required>
+                    <p class="text-xs text-gray-500 mt-1">Guardian will get portal access with this email</p>
+                </div>
+
+                <div class="mb-4">
+                    <label for="guardian_password" class="block text-gray-700 text-sm font-bold mb-2">Guardian's Password *</label>
+                    <input type="password" name="guardian_password" id="guardian_password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline @error('guardian_password') border-red-500 @enderror" required>
+                    <p class="text-xs text-gray-500 mt-1">Guardian will use this password to login to portal</p>
+                </div>
+
+                <div class="mb-4">
+                    <label for="guardian_password_confirmation" class="block text-gray-700 text-sm font-bold mb-2">Confirm Guardian's Password *</label>
+                    <input type="password" name="guardian_password_confirmation" id="guardian_password_confirmation" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
                 </div>
                 
                 <div class="mb-4">

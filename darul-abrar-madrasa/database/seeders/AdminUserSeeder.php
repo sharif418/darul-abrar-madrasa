@@ -10,22 +10,35 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create admin user if not exists
-        if (!User::where('email', 'admin@darulabrar.com')->exists()) {
-            User::create([
+        // Prevent accidental runs on production without explicit confirmation
+        if (app()->environment('production')) {
+            $this->command?->warn('AdminUserSeeder: Skipping in production environment.');
+            return;
+        }
+
+        // Create or update the default admin user idempotently
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@darulabrar.com'],
+            [
                 'name' => 'Admin User',
-                'email' => 'admin@darulabrar.com',
                 'password' => Hash::make('Admin@2025'),
                 'role' => 'admin',
                 'is_active' => true,
                 'email_verified_at' => now(),
-            ]);
-            
-            echo "Admin user created successfully!\n";
-            echo "Email: admin@darulabrar.com\n";
-            echo "Password: Admin@2025\n";
-        } else {
-            echo "Admin user already exists.\n";
-        }
+                'phone' => $this->defaultPhone(),
+            ]
+        );
+
+        $this->command?->info('Admin user ensured.');
+        $this->command?->info('Email: admin@darulabrar.com');
+        $this->command?->info('Password: Admin@2025');
+    }
+
+    /**
+     * Generate a default phone for admin if not present.
+     */
+    private function defaultPhone(): string
+    {
+        return '017' . random_int(10000000, 99999999);
     }
 }

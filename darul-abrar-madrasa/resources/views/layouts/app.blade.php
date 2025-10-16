@@ -26,24 +26,12 @@
     <!-- Custom Styles -->
     <style>
         [x-cloak] { display: none !important; }
-        
-        .sidebar-active {
-            @apply bg-green-700 text-white;
-        }
-        
-        .sidebar-link {
-            @apply flex items-center px-4 py-2 text-gray-100 hover:bg-green-700 hover:text-white rounded-md transition-all;
-        }
-        
-        .sidebar-icon {
-            @apply mr-3 h-5 w-5;
-        }
     </style>
     
     @stack('styles')
 </head>
 <body class="font-sans antialiased bg-gray-100">
-    <div x-data="{ sidebarOpen: false }" class="min-h-screen">
+    <div x-data="{ sidebarOpen: false, scrolled: false }" @scroll.window="scrolled = window.scrollY > 10" class="min-h-screen">
         <!-- Sidebar for mobile -->
         <div x-show="sidebarOpen" class="fixed inset-0 z-40 lg:hidden" x-cloak>
             <div x-show="sidebarOpen" 
@@ -76,7 +64,7 @@
                     </button>
                 </div>
                 
-                <div class="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
+                <div class="flex-1 h-0 pt-5 pb-4 overflow-y-auto custom-scrollbar">
                     <div class="flex-shrink-0 flex items-center px-4">
                         <span class="text-white text-xl font-bold">Darul Abrar</span>
                     </div>
@@ -112,7 +100,7 @@
         <!-- Static sidebar for desktop -->
         <div class="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
             <div class="flex-1 flex flex-col min-h-0 bg-green-800">
-                <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
+                <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto custom-scrollbar">
                     <div class="flex items-center flex-shrink-0 px-4">
                         <span class="text-white text-xl font-bold">Darul Abrar</span>
                     </div>
@@ -143,7 +131,7 @@
         <!-- Main content -->
         <div class="lg:pl-64 flex flex-col flex-1">
             <!-- Top navigation -->
-            <div class="sticky top-0 z-10 bg-white shadow-sm">
+            <div class="sticky top-0 z-10 bg-white" :class="scrolled ? 'shadow-md' : 'shadow-sm'">
                 <div class="flex-1 px-4 flex justify-between h-16">
                     <div class="flex">
                         <button @click="sidebarOpen = true" class="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-green-500 lg:hidden">
@@ -185,7 +173,7 @@
                                  aria-orientation="vertical" 
                                  aria-labelledby="user-menu-button" 
                                  tabindex="-1"
-                                 @click.away="open = false"
+                                 x-on:click.outside="open = false"
                                  x-cloak>
                                 <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Your Profile</a>
                                 <form method="POST" action="{{ route('logout') }}">
@@ -255,9 +243,20 @@
                     </script>
                 @endif
 
-                <!-- Page Content -->
+            <!-- Page Content -->
                 @yield('content')
             </main>
+            <!-- Global loading overlay -->
+            <div x-cloak x-show="$store.ui && $store.ui.loading" class="fixed inset-0 z-50 flex items-center justify-center">
+                <div class="absolute inset-0 bg-black/40"></div>
+                <div class="relative bg-white rounded-lg shadow-lg px-6 py-5 flex items-center gap-3">
+                    <svg class="animate-spin text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="32" height="32">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 004 12z"></path>
+                    </svg>
+                    <span class="text-sm text-gray-700">Loading...</span>
+                </div>
+            </div>
 
             <!-- Footer -->
             <footer class="bg-white shadow mt-auto py-4">
@@ -271,7 +270,8 @@
     </div>
 
     <!-- Livewire Scripts -->
-    @livewireScripts
+    <!-- Escape Blade directive in CDN URL by doubling @ to avoid Blade parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/@@livewire/livewire@3.x.x/dist/livewire.min.js" data-csrf="{{ csrf_token() }}" defer></script>
     
     @stack('scripts')
 </body>
