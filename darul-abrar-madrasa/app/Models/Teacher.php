@@ -24,6 +24,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read User $user
  * @property-read Department $department
  * @property-read \Illuminate\Database\Eloquent\Collection|Subject[] $subjects
+ * @property-read \Illuminate\Database\Eloquent\Collection|ClassRoom[] $assignedClasses
+ * @property-read \Illuminate\Database\Eloquent\Collection|TimetableEntry[] $timetableEntries
+ * @property-read \Illuminate\Database\Eloquent\Collection|TeacherAttendance[] $teacherAttendances
  */
 class Teacher extends Model
 {
@@ -86,6 +89,125 @@ class Teacher extends Model
     public function subjects()
     {
         return $this->hasMany(Subject::class);
+    }
+
+    /**
+     * Get the classes where this teacher is the class teacher/form teacher.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function assignedClasses()
+    {
+        return $this->hasMany(ClassRoom::class, 'class_teacher_id');
+    }
+
+    /**
+     * Get the timetable entries where this teacher is assigned (teaching schedule).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function timetableEntries()
+    {
+        return $this->hasMany(TimetableEntry::class);
+    }
+
+    /**
+     * Get the attendance records for this teacher.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function teacherAttendances()
+    {
+        return $this->hasMany(TeacherAttendance::class);
+    }
+
+    /**
+     * Get the attendance rate for a specific date range.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return float
+     */
+    public function getAttendanceRate($startDate, $endDate)
+    {
+        $totalDays = $this->teacherAttendances()
+            ->dateRange($startDate, $endDate)
+            ->count();
+
+        if ($totalDays === 0) {
+            return 0;
+        }
+
+        $presentDays = $this->teacherAttendances()
+            ->dateRange($startDate, $endDate)
+            ->present()
+            ->count();
+
+        return round(($presentDays / $totalDays) * 100, 2);
+    }
+
+    /**
+     * Get the total working hours for a specific date range.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return float
+     */
+    public function getTotalWorkingHours($startDate, $endDate)
+    {
+        $attendances = $this->teacherAttendances()
+            ->dateRange($startDate, $endDate)
+            ->get();
+
+        $totalHours = 0;
+        foreach ($attendances as $attendance) {
+            $hours = $attendance->getWorkingHours();
+            if ($hours !== null) {
+                $totalHours += $hours;
+            }
+        }
+
+        return round($totalHours, 2);
+    }
+
+    /**
+     * Get the count of absent days for a specific date range.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return int
+     */
+    public function getAbsentDaysCount($startDate, $endDate)
+    {
+        return $this->teacherAttendances()
+            ->dateRange($startDate, $endDate)
+            ->absent()
+            ->count();
+    }
+
+    /**
+     * Get the count of late days for a specific date range.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @param string $threshold Default is '09:00'
+     * @return int
+     */
+    public function getLateDaysCount($startDate, $endDate, $threshold = '09:00')
+    {
+        $attendances = $this->teacherAttendances()
+            ->dateRange($startDate, $endDate)
+            ->present()
+            ->get();
+
+        $lateDays = 0;
+        foreach ($attendances as $attendance) {
+            if ($attendance->isLate($threshold)) {
+                $lateDays++;
+            }
+        }
+
+        return $lateDays;
     }
 
     /**
@@ -205,5 +327,27 @@ class Teacher extends Model
     public function hasAssignedSubjects()
     {
         return $this->subjects()->exists();
+    }
+
+    /**
+     * Check if teacher is a class teacher for a specific class.
+     *
+     * @param int $classId
+     * @return bool
+     */
+    public function isClassTeacherFor($classId)
+    {
+        return $this->assignedClasses()->where('id', $classId)->exists();
+    }
+
+    /**
+     * Scope a query to only include teachers who are class teachers.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeIsClassTeacher($query)
+    {
+        return $query->has('assignedClasses');
     }
 }

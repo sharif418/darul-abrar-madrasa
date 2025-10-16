@@ -154,43 +154,82 @@
                     <h3 class="text-lg font-semibold text-gray-900">Teachers ({{ $teachers->count() }})</h3>
                     @if(auth()->user()->role === 'admin')
                     <a href="{{ route('teachers.create', ['department_id' => $department->id]) }}" class="text-blue-600 hover:text-blue-800 text-sm">
-                        + Add Teacher
+                        + Create New Teacher
                     </a>
                     @endif
                 </div>
+
+                <!-- Teacher Assignment Form -->
+                @if(auth()->user()->role === 'admin' && $availableTeachers->count() > 0)
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-2">Assign Teacher to Department</h4>
+                    <form action="{{ route('departments.assign-teacher', $department) }}" method="POST" class="flex gap-2">
+                        @csrf
+                        <select name="teacher_id" id="teacher_id" required class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select a teacher to assign</option>
+                            @foreach($availableTeachers as $teacher)
+                            <option value="{{ $teacher->id }}">
+                                {{ $teacher->user->name }} ({{ $teacher->designation }})
+                                @if($teacher->department_id)
+                                    - Currently in: {{ $teacher->department->name }}
+                                @endif
+                            </option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            Assign Teacher
+                        </button>
+                    </form>
+                </div>
+                @elseif(auth()->user()->role === 'admin' && $availableTeachers->count() === 0)
+                <p class="text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    All active teachers are already assigned to departments.
+                </p>
+                @endif
 
                 @if($teachers->count() > 0)
                 <div class="space-y-3">
                     @foreach($teachers as $teacher)
                     <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition">
-                        <div class="flex items-center gap-4">
-                            <div class="flex-shrink-0">
-                                @if($teacher->user->avatar)
-                                <img class="h-12 w-12 rounded-full" src="{{ asset('storage/' . $teacher->user->avatar) }}" alt="{{ $teacher->user->name }}">
-                                @else
-                                <div class="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                                    {{ strtoupper(substr($teacher->user->name, 0, 1)) }}
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-4 flex-1">
+                                <div class="flex-shrink-0">
+                                    @if($teacher->user->avatar)
+                                    <img class="h-12 w-12 rounded-full" src="{{ asset('storage/' . $teacher->user->avatar) }}" alt="{{ $teacher->user->name }}">
+                                    @else
+                                    <div class="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                                        {{ strtoupper(substr($teacher->user->name, 0, 1)) }}
+                                    </div>
+                                    @endif
                                 </div>
-                                @endif
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900">{{ $teacher->user->name }}</h4>
+                                    <p class="text-sm text-gray-600">{{ $teacher->designation }}</p>
+                                    <p class="text-sm text-gray-500">{{ $teacher->user->email }}</p>
+                                </div>
+                                <div>
+                                    @if($teacher->is_active)
+                                    <span class="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">Active</span>
+                                    @else
+                                    <span class="px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-800">Inactive</span>
+                                    @endif
+                                </div>
                             </div>
-                            <div class="flex-1">
-                                <h4 class="font-semibold text-gray-900">{{ $teacher->user->name }}</h4>
-                                <p class="text-sm text-gray-600">{{ $teacher->designation }}</p>
-                                <p class="text-sm text-gray-500">{{ $teacher->user->email }}</p>
-                            </div>
-                            <div>
-                                @if($teacher->is_active)
-                                <span class="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">Active</span>
-                                @else
-                                <span class="px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-800">Inactive</span>
-                                @endif
-                            </div>
-                            <div>
+                            <div class="flex items-center gap-2">
                                 <a href="{{ route('teachers.show', $teacher) }}" class="text-blue-600 hover:text-blue-800">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                                     </svg>
                                 </a>
+                                @if(auth()->user()->role === 'admin')
+                                <form action="{{ route('departments.remove-teacher', [$department, $teacher]) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this teacher from the department? This will only work if the teacher has no assigned subjects or class teacher responsibilities.')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-800 text-sm font-medium ml-3">
+                                        Remove
+                                    </button>
+                                </form>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -204,7 +243,7 @@
                     <p class="mt-2">No teachers in this department yet</p>
                     @if(auth()->user()->role === 'admin')
                     <a href="{{ route('teachers.create', ['department_id' => $department->id]) }}" class="mt-2 inline-block text-blue-600 hover:text-blue-800">
-                        Assign first teacher
+                        Create first teacher
                     </a>
                     @endif
                 </div>

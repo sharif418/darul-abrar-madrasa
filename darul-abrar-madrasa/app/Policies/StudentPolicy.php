@@ -33,20 +33,26 @@ class StudentPolicy
 
         // Guardian linked to this student
         if ($user->isGuardian() && $user->guardian) {
-            return $user->guardian->students()
-                ->where('students.id', $student->id)
-                ->exists();
+            try {
+                return $user->guardian->students()
+                    ->where('students.id', $student->id)
+                    ->exists();
+            } catch (\Throwable $e) {
+                // Fallback: deny access if guardian relation check fails
+                return false;
+            }
         }
 
-        // Teacher of the student's class (ClassRoom.teacher_id expected linkage)
+        // Comment 2: Teacher of the student's class (use class_teacher_id, not teacher_id)
         if ($user->isTeacher() && $user->teacher) {
             try {
                 $class = $student->class()->first();
-                if ($class && (int)($class->teacher_id ?? 0) === (int)$user->teacher->id) {
+                if ($class && (int)($class->class_teacher_id ?? 0) === (int)$user->teacher->id) {
                     return true;
                 }
             } catch (\Throwable $e) {
-                // Fallback: allow if teacher role but class relation not resolvable (to avoid hard failures)
+                // Fallback: deny access if class relation check fails
+                return false;
             }
         }
 

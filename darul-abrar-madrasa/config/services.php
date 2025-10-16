@@ -35,4 +35,33 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | SMS Service Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure your SMS provider here. Supported providers: twilio, nexmo, etc.
+    | Set SMS_PROVIDER in .env to enable SMS notifications.
+    |
+    */
+
+    'sms' => [
+        'provider' => env('SMS_PROVIDER', null), // 'twilio', 'nexmo', etc.
+        'from' => env('SMS_FROM', null),
+        
+        // Twilio configuration
+        'twilio' => [
+            'sid' => env('TWILIO_SID'),
+            'token' => env('TWILIO_TOKEN'),
+            'from' => env('TWILIO_FROM'),
+        ],
+        
+        // Nexmo configuration
+        'nexmo' => [
+            'key' => env('NEXMO_KEY'),
+            'secret' => env('NEXMO_SECRET'),
+            'from' => env('NEXMO_FROM'),
+        ],
+    ],
+
 ];

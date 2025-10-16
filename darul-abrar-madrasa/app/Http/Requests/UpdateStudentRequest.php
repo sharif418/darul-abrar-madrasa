@@ -43,6 +43,23 @@ class UpdateStudentRequest extends FormRequest
             'gender' => ['required', 'in:male,female,other'],
             'blood_group' => ['nullable', 'string', 'max:5'],
             'is_active' => ['boolean'],
+            
+            // Guardian array validation (optional - for enhanced form)
+            'guardians' => ['nullable', 'array', 'min:1'],
+            'guardians.*.guardian_id' => ['nullable', 'exists:guardians,id'],
+            'guardians.*.name' => ['required_without:guardians.*.guardian_id', 'string', 'max:255'],
+            'guardians.*.email' => ['required_without:guardians.*.guardian_id', 'email', 'max:255'],
+            'guardians.*.phone' => ['required_without:guardians.*.guardian_id', 'string', 'max:15'],
+            'guardians.*.alternative_phone' => ['nullable', 'string', 'max:15'],
+            'guardians.*.national_id' => ['nullable', 'string', 'max:50'],
+            'guardians.*.occupation' => ['nullable', 'string', 'max:255'],
+            'guardians.*.relationship' => ['required', 'in:father,mother,legal_guardian,sibling,other'],
+            'guardians.*.is_primary_guardian' => ['boolean'],
+            'guardians.*.can_pickup' => ['boolean'],
+            'guardians.*.financial_responsibility' => ['boolean'],
+            'guardians.*.receive_notifications' => ['boolean'],
+            'guardians.*.emergency_contact' => ['boolean'],
+            'guardians.*.notes' => ['nullable', 'string'],
         ];
     }
 

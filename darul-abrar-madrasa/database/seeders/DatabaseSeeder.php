@@ -19,7 +19,10 @@ class DatabaseSeeder extends Seeder
         // 2. Create admin user (depends on roles)
         $this->call(AdminUserSeeder::class);
         
-        // 3. Create demo data for testing (optional - only in development)
+        // 3. Seed notification templates and triggers
+        $this->call(NotificationSeeder::class);
+        
+        // 4. Create demo data for testing (optional - only in development)
         if (app()->environment(['local', 'development'])) {
             $this->call(DemoDataSeeder::class);
         }

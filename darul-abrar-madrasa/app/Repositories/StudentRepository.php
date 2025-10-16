@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\FileUploadService;
+use App\Services\GuardianService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -12,11 +13,13 @@ class StudentRepository
 {
     protected $student;
     protected FileUploadService $uploadService;
+    protected GuardianService $guardianService;
 
-    public function __construct(Student $student, FileUploadService $uploadService)
+    public function __construct(Student $student, FileUploadService $uploadService, GuardianService $guardianService)
     {
         $this->student = $student;
         $this->uploadService = $uploadService;
+        $this->guardianService = $guardianService;
     }
 
     /**
@@ -93,7 +96,30 @@ class StudentRepository
                 'is_active' => $data['is_active'] ?? true,
             ]);
 
-            return $student->load(['user', 'class.department']);
+            // Handle guardians if provided (enhanced form OR simple form with password)
+            if (!empty($data['guardians']) && is_array($data['guardians'])) {
+                foreach ($data['guardians'] as $guardianData) {
+                    $this->guardianService->createOrLinkGuardian($guardianData, $student);
+                }
+            } elseif (!empty($data['guardian_phone']) && !empty($data['guardian_email'])) {
+                // Simple form - create guardian from basic fields
+                $guardianData = [
+                    'name' => $data['father_name'], // Use father's name as guardian name
+                    'email' => $data['guardian_email'],
+                    'phone' => $data['guardian_phone'],
+                    'password' => $data['guardian_password'] ?? null, // Use provided password
+                    'relationship_type' => 'father', // Use relationship_type to match database column
+                    'relationship' => 'father', // For pivot table
+                    'is_primary_guardian' => true,
+                    'receive_notifications' => true,
+                    'financial_responsibility' => true,
+                    'can_pickup' => true,
+                    'emergency_contact' => true,
+                ];
+                $this->guardianService->createOrLinkGuardian($guardianData, $student);
+            }
+
+            return $student->load(['user', 'class.department', 'guardians.user']);
         });
     }
 
@@ -145,7 +171,12 @@ class StudentRepository
                 'is_active' => $data['is_active'] ?? true,
             ]);
 
-            return $student->fresh(['user', 'class.department']);
+            // Sync guardians if provided (enhanced form)
+            if (isset($data['guardians']) && is_array($data['guardians'])) {
+                $this->guardianService->syncGuardiansForStudent($student, $data['guardians']);
+            }
+
+            return $student->fresh(['user', 'class.department', 'guardians.user']);
         });
     }
 

@@ -31,15 +31,15 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return $this->adminDashboard();
-        } elseif (method_exists($user, 'isTeacher') && $user->isTeacher()) {
+        } elseif ($user->isTeacher()) {
             return $this->teacherDashboard();
-        } elseif (method_exists($user, 'isStudent') && $user->isStudent()) {
+        } elseif ($user->isStudent()) {
             return $this->studentDashboard();
-        } elseif (method_exists($user, 'isGuardian') && $user->isGuardian()) {
+        } elseif ($user->isGuardian()) {
             return $this->guardianDashboard();
-        } elseif (method_exists($user, 'isAccountant') && $user->isAccountant()) {
+        } elseif ($user->isAccountant()) {
             return $this->accountantDashboard();
         } else {
             return $this->staffDashboard();
@@ -794,19 +794,24 @@ class DashboardController extends Controller
      */
     private function handleMissingRoleRecord(User $user, string $role)
     {
-        // Log the missing role record for admin investigation
+        // Log the missing role record for admin investigation with detailed context
         Log::error(ucfirst($role) . ' record missing for user', [
             'user_id' => $user->id,
             'email' => $user->email,
+            'name' => $user->name,
             'role' => $user->role,
-            'timestamp' => now()
+            'spatie_roles' => $user->roles->pluck('name')->toArray(),
+            'has_role_record' => $user->hasRoleRecord(),
+            'timestamp' => now(),
+            'action_required' => 'Create ' . $role . ' record for user_id: ' . $user->id
         ]);
         
         // Redirect to profile with actionable error message
         return redirect()->route('profile.show')->with('error', 
-            'Your ' . $role . ' profile is incomplete. Please contact the administrator at ' . 
+            'Your ' . $role . ' profile is incomplete. A ' . $role . ' record needs to be created for your account. ' .
+            'Please contact the administrator at ' . 
             config('app.admin_email', 'admin@darulabrar.edu') . 
-            ' to complete your profile setup.'
+            ' to complete your profile setup. Reference: User ID ' . $user->id
         );
     }
 

@@ -12,9 +12,8 @@ class CheckRole
     /**
      * Handle an incoming request.
      *
-     * During migration to Spatie permissions we support both:
-     * - Spatie role checks (preferred)
-     * - Legacy string-based role column (fallback)
+     * Comment 1: Use hasAnyEffectiveRole for dual-check behavior during migration.
+     * This ensures both Spatie roles and legacy role column are checked.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
@@ -26,23 +25,19 @@ class CheckRole
             abort(403, 'Unauthorized action.');
         }
 
-        // Preferred: Spatie roles
-        if (method_exists($user, 'hasAnyRole') && $user->hasAnyRole($roles)) {
+        // Comment 1: Use hasAnyEffectiveRole which checks both Spatie and legacy
+        if (method_exists($user, 'hasAnyEffectiveRole') && $user->hasAnyEffectiveRole($roles)) {
             return $next($request);
         }
 
-        // Legacy fallback used - user needs Spatie role sync
-        // Run: php artisan sync:spatie-roles --repair --role={user_role}
+        // Fallback for safety (should not reach here if User model is correct)
         if (in_array($user->role, $roles, true)) {
-            Log::warning('CheckRole using legacy string-based role fallback', [
+            Log::warning('CheckRole fallback to direct role column check', [
                 'user_id' => $user->id,
                 'role' => $user->role,
                 'expected_roles' => $roles,
-                'has_spatie_roles' => $user->roles->isNotEmpty(),
-                'spatie_roles' => $user->roles->pluck('name')->toArray(),
                 'url' => $request->url(),
-                'ip' => $request->ip(),
-                'action' => 'User needs Spatie role synchronization',
+                'action' => 'hasAnyEffectiveRole method may be missing',
             ]);
             return $next($request);
         }

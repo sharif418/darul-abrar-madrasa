@@ -23,6 +23,9 @@ class Kernel extends ConsoleKernel
      * - fees:apply-late-fees -> daily
      * - fees:send-reminders  -> daily at 09:00
      * - sync:spatie-roles    -> weekly verification (Sundays at 03:00)
+     * - attendance:check-low -> daily at 08:00
+     * - performance:check-poor -> weekly on Monday at 09:00
+     * - exams:notify-schedule -> daily at 07:00
      */
     protected function schedule(Schedule $schedule): void
     {
@@ -39,6 +42,15 @@ class Kernel extends ConsoleKernel
             ->weekly()
             ->sundays()
             ->at('03:00');
+
+        // Check low attendance daily at 8 AM
+        $schedule->command('attendance:check-low')->dailyAt('08:00');
+
+        // Check poor performance weekly on Monday at 9 AM
+        $schedule->command('performance:check-poor')->weeklyOn(1, '09:00');
+
+        // Send exam schedule notifications daily at 7 AM
+        $schedule->command('exams:notify-schedule')->dailyAt('07:00');
     }
 
     /**

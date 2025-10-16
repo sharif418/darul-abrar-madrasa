@@ -25,7 +25,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(StudentRepository::class, function ($app) {
             return new StudentRepository(
                 $app->make(\App\Models\Student::class),
-                $app->make(\App\Services\FileUploadService::class)
+                $app->make(\App\Services\FileUploadService::class),
+                $app->make(\App\Services\GuardianService::class)
             );
         });
 

@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class AccountantController extends Controller
 {
@@ -57,44 +58,77 @@ class AccountantController extends Controller
     {
         $data = $request->validated();
 
-        return DB::transaction(function () use ($data) {
-            // Create linked user with accountant role
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => Hash::make($data['password']),
-                'role' => 'accountant',
-                'phone' => $data['phone'],
-                'is_active' => true,
+        try {
+            $accountant = DB::transaction(function () use ($data) {
+                // Create linked user with accountant role
+                $user = User::create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'password' => Hash::make($data['password']),
+                    'role' => 'accountant',
+                    'phone' => $data['phone'],
+                    'is_active' => true,
+                ]);
+
+                // Assign spatie role if available
+                if (method_exists($user, 'assignRole')) {
+                    try {
+                        $user->assignRole('accountant');
+                    } catch (\Throwable $e) {
+                        // ignore if roles not configured yet
+                    }
+                }
+
+                // Create accountant record
+                $accountant = Accountant::create([
+                    'user_id' => $user->id,
+                    'employee_id' => $data['employee_id'],
+                    'designation' => $data['designation'],
+                    'qualification' => $data['qualification'] ?? null,
+                    'phone' => $data['phone'],
+                    'address' => $data['address'],
+                    'joining_date' => $data['joining_date'],
+                    'salary' => $data['salary'],
+                    'can_approve_waivers' => (bool) ($data['can_approve_waivers'] ?? false),
+                    'can_approve_refunds' => (bool) ($data['can_approve_refunds'] ?? false),
+                    'max_waiver_amount' => ($data['can_approve_waivers'] ?? false) ? ($data['max_waiver_amount'] ?? null) : null,
+                    'is_active' => true,
+                ]);
+
+                return $accountant;
+            });
+
+            // Log successful creation
+            Log::info('Accountant created successfully', [
+                'user_id' => $accountant->user_id,
+                'accountant_employee_id' => $accountant->employee_id,
+                'created_by' => auth()->id(),
             ]);
 
-            // Assign spatie role if available
-            if (method_exists($user, 'assignRole')) {
-                try {
-                    $user->assignRole('accountant');
-                } catch (\Throwable $e) {
-                    // ignore if roles not configured yet
-                }
+            return redirect()->route('accountants.index')->with('success', "Accountant {$data['name']} created successfully with Employee ID: {$data['employee_id']}");
+        } catch (\Throwable $e) {
+            // Log the error with context
+            Log::error('Failed to create accountant', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'input' => array_diff_key($data, ['password' => '', 'password_confirmation' => '']),
+            ]);
+
+            // Check for specific error types
+            $errorMessage = 'Failed to create accountant. Please try again.';
+            
+            if (str_contains($e->getMessage(), 'Duplicate entry')) {
+                $errorMessage = 'This email, phone, or employee ID is already in use. Please use different values.';
+            } elseif (str_contains($e->getMessage(), 'foreign key constraint')) {
+                $errorMessage = 'Database constraint error. Please contact support.';
+            } elseif (str_contains($e->getMessage(), 'SQLSTATE')) {
+                $errorMessage = 'Database error occurred. Please try again or contact support.';
             }
 
-            // Create accountant record
-            Accountant::create([
-                'user_id' => $user->id,
-                'employee_id' => $data['employee_id'],
-                'designation' => $data['designation'],
-                'qualification' => $data['qualification'] ?? null,
-                'phone' => $data['phone'],
-                'address' => $data['address'],
-                'joining_date' => $data['joining_date'],
-                'salary' => $data['salary'],
-                'can_approve_waivers' => (bool) ($data['can_approve_waivers'] ?? false),
-                'can_approve_refunds' => (bool) ($data['can_approve_refunds'] ?? false),
-                'max_waiver_amount' => $data['max_waiver_amount'] ?? null,
-                'is_active' => true,
-            ]);
-
-            return redirect()->route('accountants.index')->with('success', 'Accountant created successfully.');
-        });
+            return redirect()->back()
+                ->withInput(array_diff_key($data, ['password' => '', 'password_confirmation' => '']))
+                ->with('error', $errorMessage . ' If the problem persists, contact support.');
+        }
     }
 
     public function show(Accountant $accountant)

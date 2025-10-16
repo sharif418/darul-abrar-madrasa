@@ -39,16 +39,13 @@ class AttendancePolicy
                 ->exists();
         }
 
-        // Teacher of the class can view
+        // Teacher who teaches any subject in the class can view
         if ($user->isTeacher() && $user->teacher) {
-            try {
-                $class = $attendance->class()->first();
-                if ($class && (int)($class->teacher_id ?? 0) === (int)$user->teacher->id) {
-                    return true;
-                }
-            } catch (\Throwable $e) {
-                // deny if unable to resolve
-            }
+            // Check if teacher teaches any subject in this class OR is the class teacher
+            return $user->teacher->subjects()
+                ->where('class_id', $attendance->class_id)
+                ->exists()
+                || $user->teacher->isClassTeacherFor($attendance->class_id);
         }
 
         return false;
@@ -73,16 +70,13 @@ class AttendancePolicy
             return true;
         }
 
-        // Teacher of the class can update
+        // Teacher who teaches any subject in the class can update
         if ($user->isTeacher() && $user->teacher) {
-            try {
-                $class = $attendance->class()->first();
-                if ($class && (int)($class->teacher_id ?? 0) === (int)$user->teacher->id) {
-                    return true;
-                }
-            } catch (\Throwable $e) {
-                // deny
-            }
+            // Check if teacher teaches any subject in this class OR is the class teacher
+            return $user->teacher->subjects()
+                ->where('class_id', $attendance->class_id)
+                ->exists()
+                || $user->teacher->isClassTeacherFor($attendance->class_id);
         }
 
         return false;
@@ -107,16 +101,13 @@ class AttendancePolicy
             return true;
         }
 
-        // Teacher can create for own class
+        // Teacher who teaches any subject in the class can create attendance
         if ($user->isTeacher() && $user->teacher) {
-            try {
-                $class = ClassRoom::find($classId);
-                if ($class && (int)($class->teacher_id ?? 0) === (int)$user->teacher->id) {
-                    return true;
-                }
-            } catch (\Throwable $e) {
-                // deny
-            }
+            // Check if teacher teaches any subject in this class OR is the class teacher
+            return $user->teacher->subjects()
+                ->where('class_id', $classId)
+                ->exists()
+                || $user->teacher->isClassTeacherFor($classId);
         }
 
         return false;

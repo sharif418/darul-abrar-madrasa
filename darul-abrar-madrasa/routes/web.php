@@ -24,6 +24,10 @@ use App\Http\Controllers\GuardianPortalController;
 use App\Http\Controllers\AccountantPortalController;
 use App\Http\Controllers\GuardianController;
 use App\Http\Controllers\AccountantController;
+use App\Http\Controllers\TeacherAttendanceController;
+use App\Http\Controllers\PeriodController;
+use App\Http\Controllers\TimetableController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -89,6 +93,8 @@ Route::middleware(['auth'])->group(function () {
         
         // Department management
         Route::resource('departments', DepartmentController::class);
+        Route::post('/departments/{department}/assign-teacher', [DepartmentController::class, 'assignTeacher'])->name('departments.assign-teacher');
+        Route::delete('/departments/{department}/teachers/{teacher}', [DepartmentController::class, 'removeTeacher'])->name('departments.remove-teacher');
         
         // Class management
         Route::resource('classes', ClassController::class);
@@ -98,6 +104,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/classes/{class}/assign-subject', [ClassController::class, 'assignSubject'])->name('classes.assign-subject');
         Route::delete('/classes/{class}/students/{student}', [ClassController::class, 'unenrollStudent'])->name('classes.unenroll-student');
         Route::delete('/classes/{class}/subjects/{subject}', [ClassController::class, 'unassignSubject'])->name('classes.unassign-subject');
+        Route::post('/classes/{class}/assign-class-teacher', [ClassController::class, 'assignClassTeacher'])->name('classes.assign-class-teacher');
+        Route::delete('/classes/{class}/remove-class-teacher', [ClassController::class, 'removeClassTeacher'])->name('classes.remove-class-teacher');
         
         // Teacher management
         Route::resource('teachers', TeacherController::class);
@@ -107,6 +115,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/students/bulk-promote', [StudentController::class, 'bulkPromote'])->name('students.bulk-promote');
         Route::post('/students/bulk-transfer', [StudentController::class, 'bulkTransfer'])->name('students.bulk-transfer');
         Route::post('/students/bulk-status', [StudentController::class, 'bulkStatusUpdate'])->name('students.bulk-status');
+        Route::get('/students/search-guardians', [StudentController::class, 'searchGuardians'])->name('students.search-guardians');
         
         // Subject management (CRUD operations - admin only)
         Route::resource('subjects', SubjectController::class)->except(['index', 'show']);
@@ -140,6 +149,38 @@ Route::middleware(['auth'])->group(function () {
 
         // Accountant management (admin only)
         Route::resource('accountants', AccountantController::class);
+
+        // Teacher Attendance management (admin only)
+        Route::post('/teacher-attendances/store-bulk', [TeacherAttendanceController::class, 'storeBulk'])->name('teacher-attendances.store-bulk');
+        Route::resource('teacher-attendances', TeacherAttendanceController::class)
+            ->parameters(['teacher-attendances' => 'teacherAttendance']);
+
+        // Period management (admin only)
+        Route::resource('periods', PeriodController::class);
+
+        // Timetable management (admin only)
+        Route::resource('timetables', TimetableController::class);
+
+        // Timetable entry management (admin only)
+        Route::get('/timetables/{timetable}/entries', [TimetableController::class, 'entries'])->name('timetables.entries');
+        Route::get('/timetables/{timetable}/entries/create', [TimetableController::class, 'createEntry'])->name('timetables.entries.create');
+        Route::post('/timetables/{timetable}/entries', [TimetableController::class, 'storeEntry'])->name('timetables.entries.store');
+        Route::get('/timetables/{timetable}/entries/{entry}/edit', [TimetableController::class, 'editEntry'])->name('timetables.entries.edit');
+        Route::put('/timetables/{timetable}/entries/{entry}', [TimetableController::class, 'updateEntry'])->name('timetables.entries.update');
+        Route::delete('/timetables/{timetable}/entries/{entry}', [TimetableController::class, 'destroyEntry'])->name('timetables.entries.destroy');
+
+        // Timetable views (admin only)
+        Route::get('/timetables/{timetable}/weekly-grid', [TimetableController::class, 'weeklyGrid'])->name('timetables.weekly-grid');
+        Route::get('/timetables/{timetable}/conflicts', [TimetableController::class, 'conflicts'])->name('timetables.conflicts');
+
+        // Notification Management (admin only)
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/notifications/templates', [NotificationController::class, 'templates'])->name('notifications.templates');
+        Route::get('/notifications/templates/{template}/edit', [NotificationController::class, 'editTemplate'])->name('notifications.templates.edit');
+        Route::put('/notifications/templates/{template}', [NotificationController::class, 'updateTemplate'])->name('notifications.templates.update');
+        Route::get('/notifications/triggers', [NotificationController::class, 'triggers'])->name('notifications.triggers');
+        Route::put('/notifications/triggers/{trigger}', [NotificationController::class, 'updateTrigger'])->name('notifications.triggers.update');
+        Route::post('/notifications/test', [NotificationController::class, 'testNotification'])->name('notifications.test');
     });
     
     // Teacher routes
@@ -148,7 +189,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/attendances/create/{class_id}', [AttendanceController::class, 'createByClass'])->name('attendances.create.class');
         Route::post('/attendances/store-bulk', [AttendanceController::class, 'storeBulk'])->name('attendances.store.bulk');
         
-        // Marks Entry moved to admin+teacher group
+        // My timetable (teachers only)
+        Route::get('/my-timetable', [TimetableController::class, 'myTimetable'])->name('my.timetable');
     });
     
     // Common routes for teachers and admin
@@ -167,17 +209,21 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/marks/create', [ResultController::class, 'createMarks'])->name('marks.create');
         Route::post('/marks/store', [ResultController::class, 'storeMarks'])->name('marks.store');
 
-    // Study materials management
-    Route::resource('study-materials', StudyMaterialController::class);
-    Route::patch('/study-materials/{studyMaterial}/toggle-published', [StudyMaterialController::class, 'togglePublished'])->name('study-materials.toggle-published');
-    
-    // Lesson Plan management
-    Route::resource('lesson-plans', LessonPlanController::class);
-    Route::post('/lesson-plans/{lessonPlan}/mark-completed', [LessonPlanController::class, 'markCompleted'])->name('lesson-plans.mark-completed');
-    Route::get('/lesson-plans/calendar', [LessonPlanController::class, 'calendar'])->name('lesson-plans.calendar');
-    
-    // Subject management (Read-only for teachers)
-    Route::resource('subjects', SubjectController::class)->only(['index', 'show']);
+        // Study materials management
+        Route::resource('study-materials', StudyMaterialController::class);
+        Route::patch('/study-materials/{studyMaterial}/toggle-published', [StudyMaterialController::class, 'togglePublished'])->name('study-materials.toggle-published');
+        
+        // Lesson Plan management
+        Route::resource('lesson-plans', LessonPlanController::class);
+        Route::post('/lesson-plans/{lessonPlan}/mark-completed', [LessonPlanController::class, 'markCompleted'])->name('lesson-plans.mark-completed');
+        Route::get('/lesson-plans/calendar', [LessonPlanController::class, 'calendar'])->name('lesson-plans.calendar');
+        
+        // Subject management (Read-only for teachers)
+        Route::resource('subjects', SubjectController::class)->only(['index', 'show']);
+
+        // Timetable viewing (admin and teachers)
+        Route::get('/timetables/{timetable}/class/{class}', [TimetableController::class, 'classTimetable'])->name('timetables.class');
+        Route::get('/timetables/{timetable}/teacher/{teacher}', [TimetableController::class, 'teacherTimetable'])->name('timetables.teacher');
     });
     
     // Student routes
@@ -209,6 +255,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/fees/{fee}/pay', [GuardianPortalController::class, 'payFee'])->name('fees.pay');
         Route::post('/fees/{fee}/process-payment', [GuardianPortalController::class, 'processPayment'])->name('fees.process-payment');
         Route::get('/notices', [GuardianPortalController::class, 'notices'])->name('notices');
+        
+        // Performance Report routes
+        Route::get('/children/{student}/performance-report', [GuardianPortalController::class, 'performanceReport'])->name('child.performance-report');
+        Route::get('/children/{student}/performance-report/download', [GuardianPortalController::class, 'downloadPerformanceReport'])->name('child.performance-report.download');
+        Route::post('/children/{student}/performance-report/email', [GuardianPortalController::class, 'emailPerformanceReport'])->name('child.performance-report.email');
+
+        // Notification Preferences
+        Route::get('/notification-preferences', [GuardianPortalController::class, 'notificationPreferences'])->name('notification-preferences');
+        Route::post('/notification-preferences', [GuardianPortalController::class, 'updateNotificationPreferences'])->name('notification-preferences.update');
     });
 
     // Accountant routes

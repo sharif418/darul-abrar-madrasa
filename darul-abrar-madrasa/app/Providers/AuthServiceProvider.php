@@ -18,6 +18,12 @@ use App\Models\Result;
 use App\Policies\ResultPolicy;
 use App\Models\Attendance;
 use App\Policies\AttendancePolicy;
+use App\Models\TeacherAttendance;
+use App\Policies\TeacherAttendancePolicy;
+use App\Models\Period;
+use App\Policies\PeriodPolicy;
+use App\Models\Timetable;
+use App\Policies\TimetablePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -36,6 +42,9 @@ class AuthServiceProvider extends ServiceProvider
         Student::class => StudentPolicy::class,
         Result::class => ResultPolicy::class,
         Attendance::class => AttendancePolicy::class,
+        TeacherAttendance::class => TeacherAttendancePolicy::class,
+        Period::class => PeriodPolicy::class,
+        Timetable::class => TimetablePolicy::class,
         // Additional policies can be registered here as they are implemented.
     ];
 

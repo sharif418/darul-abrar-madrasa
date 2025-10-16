@@ -12,17 +12,7 @@ class FeePolicy
      */
     public function viewAny(User $user): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return true;
-        }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
-            return true;
-        }
-        if (method_exists($user, 'isTeacher') && $user->isTeacher()) {
-            // Teachers may view for their class via UI filters; controller should scope appropriately.
-            return true;
-        }
-        return false;
+        return $user->isAdmin() || $user->isAccountant() || $user->isTeacher();
     }
 
     /**
@@ -30,20 +20,20 @@ class FeePolicy
      */
     public function view(User $user, Fee $fee): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin() || $user->isAccountant()) {
             return true;
         }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
-            return true;
-        }
-        if (method_exists($user, 'isTeacher') && $user->isTeacher()) {
+        
+        if ($user->isTeacher()) {
             // Best-effort: allow teacher view; stricter checks can tie to class ownership.
             return true;
         }
-        if (method_exists($user, 'isStudent') && $user->isStudent()) {
+        
+        if ($user->isStudent()) {
             return (int) $user->student?->id === (int) $fee->student_id;
         }
-        if (method_exists($user, 'isGuardian') && $user->isGuardian()) {
+        
+        if ($user->isGuardian()) {
             $guardian = $user->guardian ?? null;
             if (!$guardian) {
                 return false;
@@ -52,6 +42,7 @@ class FeePolicy
             $link = $guardian->students()->where('students.id', $fee->student_id)->first();
             return $link && (bool) $link->pivot->financial_responsibility;
         }
+        
         return false;
     }
 
@@ -60,13 +51,7 @@ class FeePolicy
      */
     public function create(User $user): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return true;
-        }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
-            return true;
-        }
-        return false;
+        return $user->isAdmin() || $user->isAccountant();
     }
 
     /**
@@ -74,13 +59,15 @@ class FeePolicy
      */
     public function update(User $user, Fee $fee): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
+        
+        if ($user->isAccountant()) {
             // Allow updates if not fully paid (or within an edit window if later enforced)
             return $fee->status !== 'paid';
         }
+        
         return false;
     }
 
@@ -89,12 +76,14 @@ class FeePolicy
      */
     public function delete(User $user, Fee $fee): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return $fee->status !== 'paid';
         }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
+        
+        if ($user->isAccountant()) {
             return $fee->status !== 'paid';
         }
+        
         return false;
     }
 
@@ -103,13 +92,7 @@ class FeePolicy
      */
     public function recordPayment(User $user, Fee $fee): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return true;
-        }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
-            return true;
-        }
-        return false;
+        return $user->isAdmin() || $user->isAccountant();
     }
 
     /**
@@ -117,13 +100,7 @@ class FeePolicy
      */
     public function applyWaiver(User $user, Fee $fee): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return true;
-        }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
-            return true;
-        }
-        return false;
+        return $user->isAdmin() || $user->isAccountant();
     }
 
     /**
@@ -131,12 +108,6 @@ class FeePolicy
      */
     public function createInstallmentPlan(User $user, Fee $fee): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return true;
-        }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
-            return true;
-        }
-        return false;
+        return $user->isAdmin() || $user->isAccountant();
     }
 }

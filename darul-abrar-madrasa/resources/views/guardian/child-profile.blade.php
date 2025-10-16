@@ -37,6 +37,12 @@
                     <div class="text-gray-600 text-sm">Class: {{ $student->class->name ?? 'N/A' }}</div>
                 </div>
                 <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('guardian.child.performance-report', $student) }}" class="inline-flex items-center px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Performance Report
+                    </a>
                     <a href="{{ route('guardian.child.attendance', $student) }}" class="inline-flex items-center px-3 py-2 bg-white border rounded-md text-gray-700 hover:bg-gray-50">View Attendance</a>
                     <a href="{{ route('guardian.child.results', $student) }}" class="inline-flex items-center px-3 py-2 bg-white border rounded-md text-gray-700 hover:bg-gray-50">View Results</a>
                     <a href="{{ route('guardian.child.fees', $student) }}" class="inline-flex items-center px-3 py-2 bg-white border rounded-md text-gray-700 hover:bg-gray-50">View Fees</a>
@@ -139,6 +145,12 @@
 
     {{-- Quick actions --}}
     <div class="mt-6 flex flex-wrap gap-3">
+        <a href="{{ route('guardian.child.performance-report', $student) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            View Performance Report
+        </a>
         <a href="{{ route('guardian.child.attendance', $student) }}" class="inline-flex items-center px-4 py-2 bg-white border rounded-md text-gray-700 hover:bg-gray-50">View Attendance</a>
         <a href="{{ route('guardian.child.results', $student) }}" class="inline-flex items-center px-4 py-2 bg-white border rounded-md text-gray-700 hover:bg-gray-50">View Results</a>
         <a href="{{ route('guardian.child.fees', $student) }}" class="inline-flex items-center px-4 py-2 bg-white border rounded-md text-gray-700 hover:bg-gray-50">View Fees</a>

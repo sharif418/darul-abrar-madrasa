@@ -57,6 +57,14 @@
                             <p class="text-gray-900">{{ $class->department->name }}</p>
                         </div>
                         <div>
+                            <label class="text-sm text-gray-600">Class Teacher</label>
+                            @if($class->hasClassTeacher())
+                            <p class="text-gray-900">{{ $class->classTeacher->user->name }} <span class="text-sm text-gray-500">({{ $class->classTeacher->designation }})</span></p>
+                            @else
+                            <p class="text-gray-500 italic">No class teacher assigned</p>
+                            @endif
+                        </div>
+                        <div>
                             <label class="text-sm text-gray-600">Capacity</label>
                             <p class="text-gray-900">{{ $class->capacity }} Students</p>
                         </div>
@@ -335,6 +343,77 @@
                     </a>
                     @endif
                 </div>
+                @endif
+            </div>
+
+            <!-- Class Teacher Management Section -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Class Teacher Management</h3>
+                
+                @if(auth()->user()->role === 'admin')
+                    @if($class->hasClassTeacher())
+                        <!-- Display Current Class Teacher -->
+                        <div class="border border-gray-200 rounded-lg p-4 mb-3">
+                            <div class="flex items-center gap-3 mb-3">
+                                @if($class->classTeacher->user->avatar)
+                                <img class="h-12 w-12 rounded-full" src="{{ asset('storage/' . $class->classTeacher->user->avatar) }}" alt="{{ $class->classTeacher->user->name }}">
+                                @else
+                                <div class="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-lg">
+                                    {{ strtoupper(substr($class->classTeacher->user->name, 0, 1)) }}
+                                </div>
+                                @endif
+                                <div class="flex-1">
+                                    <p class="font-semibold text-gray-900">{{ $class->classTeacher->user->name }}</p>
+                                    <p class="text-sm text-gray-600">{{ $class->classTeacher->designation }}</p>
+                                    <p class="text-xs text-gray-500">ID: {{ $class->classTeacher->employee_id }}</p>
+                                </div>
+                            </div>
+                            <form action="{{ route('classes.remove-class-teacher', $class) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this class teacher?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-red-600 hover:text-red-800 text-sm font-medium">
+                                    Remove Class Teacher
+                                </button>
+                            </form>
+                        </div>
+                    @else
+                        <!-- Assign Class Teacher Form -->
+                        <p class="text-gray-500 mb-3">No class teacher assigned to this class.</p>
+                        <form action="{{ route('classes.assign-class-teacher', $class) }}" method="POST">
+                            @csrf
+                            <div class="mb-3">
+                                <select name="teacher_id" id="teacher_id" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="">Select a teacher</option>
+                                    @foreach($teachers ?? [] as $teacher)
+                                    <option value="{{ $teacher->id }}">{{ $teacher->user->name }} ({{ $teacher->designation }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                                Assign Class Teacher
+                            </button>
+                        </form>
+                    @endif
+                @else
+                    <!-- Read-only view for non-admin users -->
+                    @if($class->hasClassTeacher())
+                        <div class="flex items-center gap-3">
+                            @if($class->classTeacher->user->avatar)
+                            <img class="h-12 w-12 rounded-full" src="{{ asset('storage/' . $class->classTeacher->user->avatar) }}" alt="{{ $class->classTeacher->user->name }}">
+                            @else
+                            <div class="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-lg">
+                                {{ strtoupper(substr($class->classTeacher->user->name, 0, 1)) }}
+                            </div>
+                            @endif
+                            <div>
+                                <p class="font-semibold text-gray-900">{{ $class->classTeacher->user->name }}</p>
+                                <p class="text-sm text-gray-600">{{ $class->classTeacher->designation }}</p>
+                            </div>
+                        </div>
+                    @else
+                        <p class="text-gray-500 italic">No class teacher assigned</p>
+                    @endif
                 @endif
             </div>
         </div>

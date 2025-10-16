@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property string $name
  * @property int $department_id
+ * @property int|null $class_teacher_id
  * @property string|null $class_numeric
  * @property string|null $section
  * @property int $capacity
@@ -20,10 +21,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Carbon\Carbon $updated_at
  * 
  * @property-read Department $department
+ * @property-read Teacher|null $classTeacher
  * @property-read \Illuminate\Database\Eloquent\Collection|Student[] $students
  * @property-read \Illuminate\Database\Eloquent\Collection|Subject[] $subjects
  * @property-read \Illuminate\Database\Eloquent\Collection|Exam[] $exams
  * @property-read \Illuminate\Database\Eloquent\Collection|Attendance[] $attendances
+ * @property-read \Illuminate\Database\Eloquent\Collection|TimetableEntry[] $timetableEntries
  */
 class ClassRoom extends Model
 {
@@ -44,6 +47,7 @@ class ClassRoom extends Model
     protected $fillable = [
         'name',
         'department_id',
+        'class_teacher_id',
         'class_numeric',
         'section',
         'capacity',
@@ -69,6 +73,26 @@ class ClassRoom extends Model
     public function department()
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * Get the teacher who is the class teacher/form teacher for this class.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function classTeacher()
+    {
+        return $this->belongsTo(Teacher::class, 'class_teacher_id');
+    }
+
+    /**
+     * Check if the class has a designated class teacher.
+     *
+     * @return bool
+     */
+    public function hasClassTeacher(): bool
+    {
+        return !is_null($this->class_teacher_id);
     }
 
     /**
@@ -109,6 +133,16 @@ class ClassRoom extends Model
     public function attendances()
     {
         return $this->hasMany(Attendance::class, 'class_id');
+    }
+
+    /**
+     * Get the timetable entries for the class.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function timetableEntries()
+    {
+        return $this->hasMany(TimetableEntry::class, 'class_id');
     }
 
     /**

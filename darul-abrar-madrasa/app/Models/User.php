@@ -28,15 +28,17 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Teacher|null $teacher
  * @property-read Student|null $student
  * @property-read string $avatar_url
+ * 
+ * @deprecated The hasEffectiveRole() and hasAnyEffectiveRole() methods provide dual-check
+ *             behavior during migration to Spatie. These will be removed after full data
+ *             migration when all users have Spatie roles assigned. Use isAdmin(), isTeacher(),
+ *             etc. for role-specific checks, or hasRole()/hasAnyRole() for Spatie-only checks.
  */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
-    use HasRoles {
-        hasRole as spatieHasRole;
-        hasAnyRole as spatieHasAnyRole;
-    }
+    use HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -64,18 +66,15 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_active' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'is_active' => 'boolean',
+    ];
     
     /**
      * Get the teacher record associated with the user.
@@ -156,78 +155,69 @@ class User extends Authenticatable
     }
     
     /**
-     * Check if the user is an admin.
+     * Comment 1: Check if the user is an admin (dual-check: Spatie + legacy).
      *
      * @return bool
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->hasRole('admin') || $this->role === 'admin';
     }
     
     /**
-     * Check if the user is a teacher.
+     * Comment 1: Check if the user is a teacher (dual-check: Spatie + legacy).
      *
      * @return bool
      */
     public function isTeacher(): bool
     {
-        return $this->role === 'teacher';
+        return $this->hasRole('teacher') || $this->role === 'teacher';
     }
     
     /**
-     * Check if the user is a student.
+     * Comment 1: Check if the user is a student (dual-check: Spatie + legacy).
      *
      * @return bool
      */
     public function isStudent(): bool
     {
-        return $this->role === 'student';
+        return $this->hasRole('student') || $this->role === 'student';
     }
     
     /**
-     * Check if the user is a staff.
+     * Comment 1: Check if the user is a staff (dual-check: Spatie + legacy).
      *
      * @return bool
      */
     public function isStaff(): bool
     {
-        return $this->role === 'staff';
+        return $this->hasRole('staff') || $this->role === 'staff';
     }
 
     /**
-     * Check if the user is a guardian.
-     *
-     * Temporary dual-check during migration to Spatie permission system.
+     * Comment 1: Check if the user is a guardian (dual-check: Spatie + legacy).
      *
      * @return bool
      */
     public function isGuardian(): bool
     {
-        return $this->spatieHasRole('guardian') || $this->role === 'guardian';
+        return $this->hasRole('guardian') || $this->role === 'guardian';
     }
 
     /**
-     * Check if the user is an accountant.
-     *
-     * Temporary dual-check during migration to Spatie permission system.
+     * Comment 1: Check if the user is an accountant (dual-check: Spatie + legacy).
      *
      * @return bool
      */
     public function isAccountant(): bool
     {
-        return $this->spatieHasRole('accountant') || $this->role === 'accountant';
+        return $this->hasRole('accountant') || $this->role === 'accountant';
     }
 
     /**
-     * Check if the user has a corresponding record in the role-specific table.
+     * Comment 1: Check if the user has a corresponding record in the role-specific table.
      *
-     * This method verifies that a user with a specific role has the required
-     * record in the corresponding role table (teachers, students, guardians, accountants).
-     * Admin and staff roles always return true as they don't require separate tables.
-     * 
-     * During migration to Spatie permission system, this method checks both the legacy
-     * role column and Spatie roles to ensure accurate reporting.
+     * Uses effective role (Spatie + legacy fallback) to determine which record to check.
      *
      * @return bool True if the role record exists or is not required, false otherwise
      */
@@ -235,13 +225,13 @@ class User extends Authenticatable
     {
         // Determine effective role (prefer Spatie roles during migration)
         $role = $this->role;
-        if ($this->spatieHasRole('teacher')) {
+        if ($this->hasRole('teacher')) {
             $role = 'teacher';
-        } elseif ($this->spatieHasRole('student')) {
+        } elseif ($this->hasRole('student')) {
             $role = 'student';
-        } elseif ($this->spatieHasRole('guardian')) {
+        } elseif ($this->hasRole('guardian')) {
             $role = 'guardian';
-        } elseif ($this->spatieHasRole('accountant')) {
+        } elseif ($this->hasRole('accountant')) {
             $role = 'accountant';
         }
         
@@ -256,17 +246,27 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the role-specific record for this user.
+     * Comment 1: Get the role-specific record for this user.
      *
-     * This accessor returns the corresponding role model instance (Teacher, Student,
-     * Guardian, or Accountant) based on the user's role. Returns null for admin/staff
-     * roles or if no record exists.
+     * Uses effective role (Spatie + legacy fallback) to determine which record to return.
      *
      * @return Teacher|Student|Guardian|Accountant|null
      */
     public function getRoleRecordAttribute()
     {
-        return match($this->role) {
+        // Determine effective role (prefer Spatie roles during migration)
+        $role = $this->role;
+        if ($this->hasRole('teacher')) {
+            $role = 'teacher';
+        } elseif ($this->hasRole('student')) {
+            $role = 'student';
+        } elseif ($this->hasRole('guardian')) {
+            $role = 'guardian';
+        } elseif ($this->hasRole('accountant')) {
+            $role = 'accountant';
+        }
+        
+        return match($role) {
             'teacher' => $this->teacher,
             'student' => $this->student,
             'guardian' => $this->guardian,
@@ -276,48 +276,21 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user has specific role.
+     * Comment 1: Check if user has effective role (Spatie + legacy fallback).
      *
-     * Temporary dual-check during migration to Spatie permission system:
-     * - Prefer Spatie roles
-     * - Fallback to legacy string-based role column
+     * This helper provides dual-check behavior during migration to Spatie permission system:
+     * - Checks Spatie roles first
+     * - Falls back to legacy string-based role column
+     * - Supports arrays, collections, and pipe-delimited strings
      *
-     * @param string $role
-     * @return bool
-     */
-    public function hasRole($roles): bool
-    {
-        // Support arrays/collections as Spatie may pass arrays internally
-        if (is_array($roles) || $roles instanceof \Illuminate\Support\Collection) {
-            foreach ($roles as $role) {
-                if ($this->spatieHasRole($role) || $this->role === $role) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // Single role check
-        if ($this->spatieHasRole($roles)) {
-            return true;
-        }
-
-        // Fallback legacy role check (to be removed after full migration)
-        return $this->role === $roles;
-    }
-
-    /**
-     * Check if user has any of the specified roles.
-     *
-     * Temporary dual-check during migration to Spatie permission system:
-     * - Prefer Spatie roles
-     * - Fallback to legacy string-based role column
-     * - Supports both array and pipe-delimited string inputs
+     * @deprecated Temporary method during migration. Will be removed after full Spatie migration.
+     *             Use isAdmin(), isTeacher(), etc. for role-specific checks.
+     *             Use hasRole()/hasAnyRole() for Spatie-only checks.
      *
      * @param string|array|\Illuminate\Support\Collection $roles
      * @return bool
      */
-    public function hasAnyRole($roles): bool
+    public function hasEffectiveRole($roles): bool
     {
         // Convert pipe-delimited string to array
         if (is_string($roles) && str_contains($roles, '|')) {
@@ -330,7 +303,7 @@ class User extends Authenticatable
         }
 
         // Check Spatie roles first
-        if ($this->spatieHasAnyRole($roles)) {
+        if ($this->hasAnyRole($roles)) {
             return true;
         }
 
@@ -345,7 +318,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Alias for hasEffectiveRole() for consistency with Spatie naming.
+     *
+     * @deprecated Temporary method during migration.
+     *
+     * @param string|array|\Illuminate\Support\Collection $roles
+     * @return bool
+     */
+    public function hasAnyEffectiveRole($roles): bool
+    {
+        return $this->hasEffectiveRole($roles);
+    }
+
+    /**
      * Get the full avatar URL.
+     *
+     * Comment 5: Use effective role (Spatie-aware) instead of legacy column only
      *
      * @return string
      */
@@ -355,12 +343,19 @@ class User extends Authenticatable
             return Storage::url($this->avatar);
         }
         
-        // Return default avatar based on role
-        return match($this->role) {
-            'admin' => asset('images/default-admin-avatar.png'),
-            'teacher' => asset('images/default-teacher-avatar.png'),
-            'student' => asset('images/default-student-avatar.png'),
-            default => asset('images/default-avatar.png'),
-        };
+        // Determine effective role using role detection methods
+        if ($this->isAdmin()) {
+            return asset('images/default-admin-avatar.png');
+        } elseif ($this->isTeacher()) {
+            return asset('images/default-teacher-avatar.png');
+        } elseif ($this->isStudent()) {
+            return asset('images/default-student-avatar.png');
+        } elseif ($this->isGuardian()) {
+            return asset('images/default-guardian-avatar.png');
+        } elseif ($this->isAccountant()) {
+            return asset('images/default-accountant-avatar.png');
+        }
+        
+        return asset('images/default-avatar.png');
     }
 }

@@ -7,7 +7,10 @@ use App\Http\Requests\UpdateExamRequest;
 use App\Models\ClassRoom;
 use App\Models\Exam;
 use App\Models\Subject;
+use App\Models\Student;
+use App\Models\Notification;
 use App\Repositories\ExamRepository;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -237,6 +240,66 @@ class ExamController extends Controller
                     'exam_id' => $exam->id,
                     'user_id' => Auth::id(),
                 ]);
+
+                // Send result publication notifications to guardians
+                try {
+                    $notificationService = app(NotificationService::class);
+                    $notificationsSent = 0;
+
+                    // Get all students in the exam's class
+                    $students = Student::where('class_id', $exam->class_id)
+                        ->with(['guardians', 'results' => function ($query) use ($exam) {
+                            $query->where('exam_id', $exam->id);
+                        }])
+                        ->get();
+
+                    foreach ($students as $student) {
+                        // Get student's result for this exam
+                        $studentResult = $student->results->first();
+                        
+                        if ($studentResult) {
+                            // Get guardians with notifications enabled
+                            $guardians = $student->guardians()
+                                ->wherePivot('receive_notifications', true)
+                                ->get();
+
+                            foreach ($guardians as $guardian) {
+                                $data = [
+                                    'student_name' => $student->name,
+                                    'guardian_name' => $guardian->name,
+                                    'exam_name' => $exam->name,
+                                    'class_name' => $exam->class->name ?? 'N/A',
+                                    'gpa' => number_format($studentResult->gpa ?? 0, 2),
+                                    'status' => $studentResult->status ?? 'N/A',
+                                    'total_marks' => $studentResult->total_marks ?? 0,
+                                    'obtained_marks' => $studentResult->obtained_marks ?? 0,
+                                ];
+
+                                $notificationId = $notificationService->sendNotification(
+                                    Notification::TYPE_RESULT_PUBLISHED,
+                                    $guardian->id,
+                                    'guardian',
+                                    $data
+                                );
+
+                                if ($notificationId) {
+                                    $notificationsSent++;
+                                }
+                            }
+                        }
+                    }
+
+                    Log::info('Result publication notifications sent', [
+                        'exam_id' => $exam->id,
+                        'notifications_sent' => $notificationsSent,
+                    ]);
+                } catch (\Exception $notificationError) {
+                    // Log notification error but don't fail the result publication
+                    Log::error('Failed to send result publication notifications', [
+                        'exam_id' => $exam->id,
+                        'error' => $notificationError->getMessage(),
+                    ]);
+                }
 
                 return redirect()->route('exams.show', $exam->id)
                     ->with('success', 'Exam results published successfully.');

@@ -8,16 +8,19 @@ use App\Http\Requests\BulkStudentActionRequest;
 use App\Models\ClassRoom;
 use App\Models\Student;
 use App\Repositories\StudentRepository;
+use App\Services\GuardianService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class StudentController extends Controller
 {
     protected $studentRepository;
+    protected $guardianService;
 
-    public function __construct(StudentRepository $studentRepository)
+    public function __construct(StudentRepository $studentRepository, GuardianService $guardianService)
     {
         $this->studentRepository = $studentRepository;
+        $this->guardianService = $guardianService;
     }
 
     /**
@@ -143,7 +146,7 @@ class StudentController extends Controller
     public function edit(Student $student)
     {
         $this->authorize('update', $student);
-        $student->load('user');
+        $student->load(['user', 'guardians.user']);
         $classes = ClassRoom::with('department')->get();
         return view('students.edit', compact('student', 'classes'));
     }
@@ -305,6 +308,54 @@ class StudentController extends Controller
             ]);
 
             return back()->with('error', 'Failed to update status for selected students. Please try again.');
+        }
+    }
+
+    /**
+     * Search guardians via AJAX.
+     */
+    public function searchGuardians(Request $request)
+    {
+        try {
+            $search = $request->input('search', '');
+            
+            if (strlen($search) < 3) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please enter at least 3 characters',
+                    'guardians' => [],
+                ]);
+            }
+
+            $guardians = $this->guardianService->searchGuardians($search, 10);
+
+            $formattedGuardians = $guardians->map(function ($guardian) {
+                return [
+                    'id' => $guardian->id,
+                    'name' => $guardian->user->name ?? 'N/A',
+                    'email' => $guardian->email,
+                    'phone' => $guardian->phone,
+                    'alternative_phone' => $guardian->alternative_phone,
+                    'occupation' => $guardian->occupation,
+                    'students_count' => $guardian->students()->count(),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'guardians' => $formattedGuardians,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to search guardians', [
+                'error' => $e->getMessage(),
+                'search' => $request->input('search'),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Search failed. Please try again.',
+                'guardians' => [],
+            ], 500);
         }
     }
 }

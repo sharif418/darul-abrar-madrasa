@@ -49,6 +49,26 @@
                 @enderror
             </div>
 
+            <!-- Class Teacher -->
+            <div class="mb-4">
+                <label for="class_teacher_id" class="block text-sm font-medium text-gray-700 mb-1">
+                    Class Teacher (Optional)
+                </label>
+                <select name="class_teacher_id" id="class_teacher_id"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('class_teacher_id') border-red-500 @enderror">
+                    <option value="">Select Class Teacher (Optional)</option>
+                    @foreach($teachers as $teacher)
+                    <option value="{{ $teacher->id }}" {{ old('class_teacher_id') == $teacher->id ? 'selected' : '' }}>
+                        {{ $teacher->user->name }} ({{ $teacher->designation }})
+                    </option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-gray-500">The class teacher/form teacher will have special access to manage this class</p>
+                @error('class_teacher_id')
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <!-- Class Numeric -->
                 <div>

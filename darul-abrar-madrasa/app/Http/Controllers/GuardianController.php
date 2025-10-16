@@ -101,7 +101,7 @@ class GuardianController extends Controller
             // Optionally link to students
             if (!empty($data['student_ids']) && is_array($data['student_ids'])) {
                 $pivotDefaults = [
-                    'relationship' => $data['relationship_type'] ?? 'other',
+                    'relationship_type' => $data['relationship_type'] ?? 'other',
                     'is_primary_guardian' => (bool) ($data['is_primary_contact'] ?? true),
                     'can_pickup' => true,
                     'financial_responsibility' => false,
@@ -210,7 +210,7 @@ class GuardianController extends Controller
 
         $data = $request->validate([
             'student_id' => 'required|exists:students,id',
-            'relationship' => 'nullable|in:father,mother,legal_guardian,sibling,other',
+            'relationship_type' => 'nullable|in:father,mother,legal_guardian,sibling,other',
             'is_primary_guardian' => 'sometimes|boolean',
             'can_pickup' => 'sometimes|boolean',
             'financial_responsibility' => 'sometimes|boolean',
@@ -219,7 +219,7 @@ class GuardianController extends Controller
         ]);
 
         $pivot = [
-            'relationship' => $data['relationship'] ?? 'other',
+            'relationship_type' => $data['relationship_type'] ?? 'other',
             'is_primary_guardian' => (bool) ($data['is_primary_guardian'] ?? false),
             'can_pickup' => (bool) ($data['can_pickup'] ?? true),
             'financial_responsibility' => (bool) ($data['financial_responsibility'] ?? false),

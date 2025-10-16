@@ -9,45 +9,33 @@ class FeeWaiverPolicy
 {
     public function viewAny(User $user): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return true;
-        }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
-            return true;
-        }
-        return false;
+        return $user->isAdmin() || $user->isAccountant();
     }
 
     public function view(User $user, FeeWaiver $waiver): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin() || $user->isAccountant()) {
             return true;
         }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
-            return true;
-        }
-        if (method_exists($user, 'isStudent') && $user->isStudent()) {
+        
+        if ($user->isStudent()) {
             return (int) $user->student?->id === (int) $waiver->student_id;
         }
-        if (method_exists($user, 'isGuardian') && $user->isGuardian()) {
+        
+        if ($user->isGuardian()) {
             $guardian = $user->guardian ?? null;
             if (!$guardian) {
                 return false;
             }
             return $guardian->students()->where('students.id', $waiver->student_id)->exists();
         }
+        
         return false;
     }
 
     public function create(User $user): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return true;
-        }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
-            return true;
-        }
-        return false;
+        return $user->isAdmin() || $user->isAccountant();
     }
 
     public function update(User $user, FeeWaiver $waiver): bool
@@ -55,23 +43,20 @@ class FeeWaiverPolicy
         if ($waiver->status !== 'pending') {
             return false;
         }
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return true;
-        }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
-            return true;
-        }
-        return false;
+        
+        return $user->isAdmin() || $user->isAccountant();
     }
 
     public function delete(User $user, FeeWaiver $waiver): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return in_array($waiver->status, ['pending', 'rejected'], true);
         }
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
+        
+        if ($user->isAccountant()) {
             return $waiver->status === 'pending';
         }
+        
         return false;
     }
 
@@ -81,11 +66,11 @@ class FeeWaiverPolicy
             return false;
         }
 
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
+        if ($user->isAccountant()) {
             $accountant = $user->accountant ?? null;
             if (!$accountant) {
                 return false;
@@ -109,11 +94,11 @@ class FeeWaiverPolicy
             return false;
         }
 
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        if (method_exists($user, 'isAccountant') && $user->isAccountant()) {
+        if ($user->isAccountant()) {
             $accountant = $user->accountant ?? null;
             return $accountant && (bool) $accountant->can_approve_waivers;
         }

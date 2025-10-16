@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Requests\UpdateDepartmentRequest;
 use App\Models\Department;
+use App\Models\Teacher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -102,7 +103,16 @@ class DepartmentController extends Controller
                 ->with('user')
                 ->get();
 
-            return view('departments.show', compact('department', 'classes', 'teachers'));
+            // Get available teachers for assignment
+            $availableTeachers = Teacher::where('is_active', true)
+                ->where(function($query) use ($department) {
+                    $query->whereNull('department_id')
+                          ->orWhere('department_id', '!=', $department->id);
+                })
+                ->with('user', 'department')
+                ->get();
+
+            return view('departments.show', compact('department', 'classes', 'teachers', 'availableTeachers'));
         } catch (\Exception $e) {
             Log::error('Failed to load department details', [
                 'department_id' => $department->id,
@@ -200,6 +210,125 @@ class DepartmentController extends Controller
             ]);
 
             return back()->with('error', 'Failed to delete department. Please try again.');
+        }
+    }
+
+    /**
+     * Assign a teacher to the department.
+     */
+    public function assignTeacher(Request $request, Department $department)
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'teacher_id' => 'required|exists:teachers,id'
+            ]);
+
+            // Retrieve the teacher
+            $teacher = Teacher::findOrFail($request->teacher_id);
+
+            // Check if the department is active
+            if (!$department->is_active) {
+                return back()->with('error', 'Cannot assign teacher to inactive department.');
+            }
+
+            // Check if the teacher is active
+            if (!$teacher->is_active) {
+                return back()->with('error', 'Cannot assign inactive teacher to department.');
+            }
+
+            // Check if the teacher is already in this department
+            if ($teacher->department_id === $department->id) {
+                return redirect()->route('departments.show', $department)
+                    ->with('info', 'This teacher is already assigned to this department.');
+            }
+
+            // Handle reassignment from another department
+            if ($teacher->department_id !== null && $teacher->department_id !== $department->id) {
+                // Check if teacher has assigned subjects in current department
+                if ($teacher->hasAssignedSubjects()) {
+                    return back()->with('error', 'Cannot reassign teacher to another department while they have assigned subjects. Please unassign all subjects first.');
+                }
+
+                // Check if teacher is a class teacher in current department
+                if ($teacher->assignedClasses()->count() > 0) {
+                    return back()->with('error', 'Cannot reassign teacher to another department while they are assigned as class teacher. Please remove class teacher assignment first.');
+                }
+
+                Log::warning('Teacher reassigned from one department to another', [
+                    'old_department_id' => $teacher->department_id,
+                    'new_department_id' => $department->id,
+                    'teacher_id' => $teacher->id,
+                    'user_id' => auth()->id(),
+                ]);
+            }
+
+            // Update the teacher's department
+            $teacher->department_id = $department->id;
+            $teacher->save();
+
+            Log::info('Teacher assigned to department', [
+                'department_id' => $department->id,
+                'teacher_id' => $teacher->id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->route('departments.show', $department)
+                ->with('success', 'Teacher assigned to department successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to assign teacher to department', [
+                'error' => $e->getMessage(),
+                'department_id' => $department->id,
+                'teacher_id' => $request->teacher_id ?? null,
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to assign teacher to department. Please try again.');
+        }
+    }
+
+    /**
+     * Remove a teacher from the department.
+     */
+    public function removeTeacher(Department $department, Teacher $teacher)
+    {
+        try {
+            // Check if the teacher belongs to this department
+            if ($teacher->department_id !== $department->id) {
+                return back()->with('error', 'This teacher does not belong to this department.');
+            }
+
+            // Check if teacher has assigned subjects
+            if ($teacher->hasAssignedSubjects()) {
+                return back()->with('error', 'Cannot remove teacher from department while they have assigned subjects. Please unassign all subjects first.');
+            }
+
+            // Check if teacher is a class teacher
+            if ($teacher->assignedClasses()->count() > 0) {
+                return back()->with('error', 'Cannot remove teacher from department while they are assigned as class teacher. Please remove class teacher assignment first.');
+            }
+
+            // Set the teacher's department to null
+            $teacher->department_id = null;
+            $teacher->save();
+
+            Log::info('Teacher removed from department', [
+                'department_id' => $department->id,
+                'teacher_id' => $teacher->id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->route('departments.show', $department)
+                ->with('success', 'Teacher removed from department successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to remove teacher from department', [
+                'error' => $e->getMessage(),
+                'department_id' => $department->id,
+                'teacher_id' => $teacher->id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return back()->with('error', 'Failed to remove teacher from department. Please try again.');
         }
     }
 }

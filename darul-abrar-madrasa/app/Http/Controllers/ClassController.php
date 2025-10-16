@@ -64,7 +64,8 @@ class ClassController extends Controller
     public function create()
     {
         $departments = Department::where('is_active', true)->get();
-        return view('classes.create', compact('departments'));
+        $teachers = Teacher::where('is_active', true)->with('user')->get();
+        return view('classes.create', compact('departments', 'teachers'));
     }
 
     /**
@@ -102,7 +103,7 @@ class ClassController extends Controller
     public function show(ClassRoom $class)
     {
         try {
-            $class->load(['department', 'students.user', 'subjects.teacher.user']);
+            $class->load(['department', 'classTeacher.user', 'students.user', 'subjects.teacher.user']);
             $class->loadCount(['students', 'subjects', 'exams']);
 
             // Get recent exams
@@ -111,7 +112,10 @@ class ClassController extends Controller
                 ->take(5)
                 ->get();
 
-            return view('classes.show', compact('class', 'recentExams'));
+            // Get available teachers for assignment (only if no class teacher assigned)
+            $teachers = $class->hasClassTeacher() ? [] : Teacher::where('is_active', true)->with('user')->get();
+
+            return view('classes.show', compact('class', 'recentExams', 'teachers'));
         } catch (\Exception $e) {
             Log::error('Failed to load class details', [
                 'class_id' => $class->id,
@@ -129,7 +133,8 @@ class ClassController extends Controller
     public function edit(ClassRoom $class)
     {
         $departments = Department::where('is_active', true)->get();
-        return view('classes.edit', compact('class', 'departments'));
+        $teachers = Teacher::where('is_active', true)->with('user')->get();
+        return view('classes.edit', compact('class', 'departments', 'teachers'));
     }
 
     /**
@@ -449,6 +454,97 @@ class ClassController extends Controller
             ]);
 
             return back()->with('error', 'Failed to unassign subject. Please try again.');
+        }
+    }
+
+    /**
+     * Assign a class teacher to this class.
+     */
+    public function assignClassTeacher(Request $request, ClassRoom $class)
+    {
+        try {
+            // Validate the request
+            $request->validate([
+                'teacher_id' => 'required|exists:teachers,id'
+            ]);
+
+            // Retrieve the teacher
+            $teacher = Teacher::findOrFail($request->teacher_id);
+
+            // Check if the teacher's user account is active
+            if (!$teacher->user || !$teacher->user->is_active) {
+                return back()->with('error', 'Cannot assign inactive teacher as class teacher.');
+            }
+
+            // Guard against overwriting an existing class teacher
+            if ($class->class_teacher_id && $class->class_teacher_id !== (int) $teacher->id) {
+                return back()->with('error', 'A class teacher is already assigned. Remove the current teacher before assigning a new one.');
+            }
+
+            // Check if the teacher is already the class teacher for this class
+            if ($class->class_teacher_id === $teacher->id) {
+                return redirect()->route('classes.show', $class)
+                    ->with('info', 'This teacher is already the class teacher for this class.');
+            }
+
+            // Update the class
+            $class->class_teacher_id = $request->teacher_id;
+            $class->save();
+
+            Log::info('Class teacher assigned', [
+                'class_id' => $class->id,
+                'teacher_id' => $request->teacher_id,
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->route('classes.show', $class)
+                ->with('success', 'Class teacher assigned successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to assign class teacher', [
+                'error' => $e->getMessage(),
+                'class_id' => $class->id,
+                'teacher_id' => $request->teacher_id ?? null,
+                'user_id' => auth()->id()
+            ]);
+
+            return back()->with('error', 'Failed to assign class teacher. Please try again.');
+        }
+    }
+
+    /**
+     * Remove the class teacher from this class.
+     */
+    public function removeClassTeacher(ClassRoom $class)
+    {
+        try {
+            // Check if class has a class teacher
+            if (!$class->class_teacher_id) {
+                return back()->with('info', 'This class does not have a class teacher assigned.');
+            }
+
+            // Store the teacher_id for logging
+            $teacherId = $class->class_teacher_id;
+
+            // Remove the class teacher
+            $class->class_teacher_id = null;
+            $class->save();
+
+            Log::info('Class teacher removed', [
+                'class_id' => $class->id,
+                'teacher_id' => $teacherId,
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->route('classes.show', $class)
+                ->with('success', 'Class teacher removed successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to remove class teacher', [
+                'error' => $e->getMessage(),
+                'class_id' => $class->id,
+                'user_id' => auth()->id()
+            ]);
+
+            return back()->with('error', 'Failed to remove class teacher. Please try again.');
         }
     }
 }

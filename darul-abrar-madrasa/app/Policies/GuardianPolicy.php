@@ -12,8 +12,7 @@ class GuardianPolicy
      */
     public function viewAny(User $user): bool
     {
-        // Admins can view guardians list
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 
     /**
@@ -21,12 +20,11 @@ class GuardianPolicy
      */
     public function view(User $user, Guardian $guardian): bool
     {
-        // Admin can view any guardian
-        if ($user->isAdmin() || $user->hasRole('admin')) {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        // Owner check: guardian user viewing their own profile (if needed elsewhere)
+        // Owner check: guardian user viewing their own profile
         return $user->id === $guardian->user_id;
     }
 
@@ -35,8 +33,7 @@ class GuardianPolicy
      */
     public function create(User $user): bool
     {
-        // Admin only
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 
     /**
@@ -44,8 +41,7 @@ class GuardianPolicy
      */
     public function update(User $user, Guardian $guardian): bool
     {
-        // Admin only for admin-facing CRUD
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 
     /**
@@ -53,8 +49,7 @@ class GuardianPolicy
      */
     public function delete(User $user, Guardian $guardian): bool
     {
-        // Admin only
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 
     /**
@@ -62,7 +57,7 @@ class GuardianPolicy
      */
     public function restore(User $user, Guardian $guardian): bool
     {
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 
     /**
@@ -70,6 +65,6 @@ class GuardianPolicy
      */
     public function forceDelete(User $user, Guardian $guardian): bool
     {
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 }

@@ -51,14 +51,6 @@
                     Students
                 </span>
             </a>
-            <a href="{{ route('guardians.index') }}" class="nav-group-item {{ request()->routeIs('guardians.*') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
-                <span class="inline-flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-3-3m-2-4a4 4 0 110-8m-6 12h10v-2a3 3 0 00-3-3H9a3 3 0 00-3 3v2z"/>
-                    </svg>
-                    Guardians
-                </span>
-            </a>
             <a href="{{ route('accountants.index') }}" class="nav-group-item {{ request()->routeIs('accountants.*') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
                 <span class="inline-flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,6 +122,14 @@
                     Attendance
                 </span>
             </a>
+            <a href="{{ route('teacher-attendances.index') }}" class="nav-group-item {{ request()->routeIs('teacher-attendances.*') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
+                <span class="inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    Teacher Attendance
+                </span>
+            </a>
             <a href="{{ route('results.index') }}" class="nav-group-item {{ request()->routeIs('results.*') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
                 <span class="inline-flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,6 +168,22 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                     </svg>
                     Study Materials
+                </span>
+            </a>
+            <a href="{{ route('periods.index') }}" class="nav-group-item {{ request()->routeIs('periods.*') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
+                <span class="inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Periods
+                </span>
+            </a>
+            <a href="{{ route('timetables.index') }}" class="nav-group-item {{ request()->routeIs('timetables.*') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
+                <span class="inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    Timetables
                 </span>
             </a>
         </div>
@@ -222,6 +238,14 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h8m-8 4h6M5 4h14"/>
                     </svg>
                     Notices
+                </span>
+            </a>
+            <a href="{{ route('notifications.index') }}" class="nav-group-item {{ request()->routeIs('notifications.*') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
+                <span class="inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    </svg>
+                    Notifications
                 </span>
             </a>
         </div>
@@ -324,6 +348,14 @@
                     Subjects
                 </span>
             </a>
+            <a href="{{ route('my.timetable') }}" class="nav-group-item {{ request()->routeIs('my.timetable') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
+                <span class="inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    My Timetable
+                </span>
+            </a>
         </div>
     @endrole
 
@@ -389,5 +421,24 @@
                 </span>
             </a>
         </div>
+
+    @endrole
+
+    @role('guardian')
+        <!-- My Children -->
+        <a href="{{ route('guardian.children') }}" class="{{ request()->routeIs('guardian.children') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
+            <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-3-3m-2-4a4 4 0 110-8m-6 12h10v-2a3 3 0 00-3-3H9a3 3 0 00-3 3v2z"/>
+            </svg>
+            My Children
+        </a>
+
+        <!-- Notification Settings -->
+        <a href="{{ route('guardian.notification-preferences') }}" class="{{ request()->routeIs('guardian.notification-preferences') ? 'sidebar-active' : 'sidebar-link' }} touch-target">
+            <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            Notification Settings
+        </a>
     @endrole
 </div>

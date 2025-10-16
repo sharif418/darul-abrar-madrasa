@@ -38,16 +38,17 @@ class ResultPolicy
                 ->exists();
         }
 
-        // Teacher of the student's class (assumes ClassRoom has teacher_id reference)
+        // Comment 2: Teacher of the student's class (use class_teacher_id, not teacher_id)
         if ($user->isTeacher() && $user->teacher) {
             try {
                 $student = $result->student()->with('class')->first();
                 $class = $student?->class;
-                if ($class && (int)($class->teacher_id ?? 0) === (int)$user->teacher->id) {
+                if ($class && (int)($class->class_teacher_id ?? 0) === (int)$user->teacher->id) {
                     return true;
                 }
             } catch (\Throwable $e) {
                 // Fail safe: deny if can't resolve relationships
+                return false;
             }
         }
 
@@ -73,16 +74,17 @@ class ResultPolicy
             return true;
         }
 
-        // Teacher of the student's class can update (if exam not published; controller should validate)
+        // Comment 2: Teacher of the student's class can update (use class_teacher_id)
         if ($user->isTeacher() && $user->teacher) {
             try {
                 $student = $result->student()->with('class')->first();
                 $class = $student?->class;
-                if ($class && (int)($class->teacher_id ?? 0) === (int)$user->teacher->id) {
+                if ($class && (int)($class->class_teacher_id ?? 0) === (int)$user->teacher->id) {
                     return true;
                 }
             } catch (\Throwable $e) {
                 // deny on failure
+                return false;
             }
         }
 

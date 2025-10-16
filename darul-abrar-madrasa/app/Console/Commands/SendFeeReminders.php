@@ -6,6 +6,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
+use App\Models\Notification;
 
 class SendFeeReminders extends Command
 {
@@ -27,7 +29,7 @@ class SendFeeReminders extends Command
      */
     protected $description = 'Send fee payment reminders to guardians responsible for payments';
 
-    public function handle(): int
+    public function handle(NotificationService $notificationService): int
     {
         $dryRun = (bool) $this->option('dry-run');
         $overdueOnly = (bool) $this->option('overdue-only');
@@ -126,25 +128,50 @@ class SendFeeReminders extends Command
                     continue;
                 }
 
-                // TODO: Integrate with actual SMS/Email services as configured in .env
-                // For now, we log the reminder as a placeholder for dispatching notifications.
-                Log::info('Fee reminder prepared', [
-                    'guardian_id' => $gid,
-                    'phone' => $guardian['phone'] ?? null,
-                    'email' => $guardian['email'] ?? null,
+                // Send notification via NotificationService
+                $notificationData = [
+                    'guardian_name' => $guardian['name'],
                     'message' => $message['text'],
+                    'total_pending' => number_format($guardianPending, 2),
+                    'due_amount' => number_format($guardianPending, 2),
+                    'students' => array_map(function ($student) {
+                        return [
+                            'student_id' => $student['student_id'],
+                            'fees_count' => count($student['fees']),
+                        ];
+                    }, $bundle['students']),
+                ];
+
+                $notificationId = $notificationService->sendNotification(
+                    Notification::TYPE_FEE_DUE,
+                    $guardian['id'],
+                    'guardian',
+                    $notificationData
+                );
+
+                if ($notificationId) {
+                    $this->line(sprintf(
+                        'Notification sent to Guardian #%d %s | Pending: ৳ %s',
+                        $gid,
+                        $guardian['name'],
+                        number_format($guardianPending, 2)
+                    ));
+                    $reminderCount++;
+                } else {
+                    $this->error(sprintf(
+                        'Failed to send notification to Guardian #%d %s',
+                        $gid,
+                        $guardian['name']
+                    ));
+                }
+
+                Log::info('Fee reminder sent', [
+                    'guardian_id' => $gid,
+                    'notification_id' => $notificationId,
                     'pending' => $guardianPending,
                     'overdue_only' => $overdueOnly,
                     'window_days' => $days,
                 ]);
-
-                $this->line(sprintf(
-                    'Reminder queued for Guardian #%d %s | Pending: ৳ %s',
-                    $gid,
-                    $guardian['name'],
-                    number_format($guardianPending, 2)
-                ));
-                $reminderCount++;
             }
 
             $summary = sprintf(

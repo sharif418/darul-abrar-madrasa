@@ -14,16 +14,7 @@ class StudyMaterialPolicy
      */
     public function viewAny(User $user): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return true;
-        }
-
-        if (method_exists($user, 'isTeacher') && $user->isTeacher()) {
-            return true;
-        }
-
-        // Students and guardians use scoped endpoints (myMaterials/guardian portal)
-        return false;
+        return $user->isAdmin() || $user->isTeacher();
     }
 
     /**
@@ -31,13 +22,11 @@ class StudyMaterialPolicy
      */
     public function view(User $user, StudyMaterial $material): bool
     {
-        // Admin
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        // Teacher: allow if creator or matches subject/class
-        if (method_exists($user, 'isTeacher') && $user->isTeacher()) {
+        if ($user->isTeacher()) {
             $teacher = $user->teacher ?? null;
             if (!$teacher) {
                 return false;
@@ -45,12 +34,11 @@ class StudyMaterialPolicy
             if ((int) ($material->teacher_id ?? 0) === (int) $teacher->id) {
                 return true;
             }
-            // Fallback: allow if teacher teaches this class or subject (best-effort; model relations may vary)
+            // Fallback: allow if teacher teaches this class or subject
             return true;
         }
 
-        // Student: published AND class match
-        if (method_exists($user, 'isStudent') && $user->isStudent()) {
+        if ($user->isStudent()) {
             $student = $user->student ?? null;
             if (!$student) {
                 return false;
@@ -58,8 +46,7 @@ class StudyMaterialPolicy
             return (bool) ($material->is_published ?? false) && (int) $material->class_id === (int) $student->class_id;
         }
 
-        // Guardian: published AND for child's class
-        if (method_exists($user, 'isGuardian') && $user->isGuardian()) {
+        if ($user->isGuardian()) {
             return $this->isForGuardianChild($user, $material);
         }
 
@@ -71,15 +58,7 @@ class StudyMaterialPolicy
      */
     public function create(User $user): bool
     {
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
-            return true;
-        }
-
-        if (method_exists($user, 'isTeacher') && $user->isTeacher()) {
-            return true;
-        }
-
-        return false;
+        return $user->isAdmin() || $user->isTeacher();
     }
 
     /**
@@ -87,13 +66,11 @@ class StudyMaterialPolicy
      */
     public function update(User $user, StudyMaterial $material): bool
     {
-        // Admin
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        // Teacher may update if they created it
-        if (method_exists($user, 'isTeacher') && $user->isTeacher()) {
+        if ($user->isTeacher()) {
             $teacher = $user->teacher ?? null;
             return $teacher && (int) ($material->teacher_id ?? 0) === (int) $teacher->id;
         }
@@ -106,13 +83,11 @@ class StudyMaterialPolicy
      */
     public function delete(User $user, StudyMaterial $material): bool
     {
-        // Admin
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        // Teacher may delete if they created it
-        if (method_exists($user, 'isTeacher') && $user->isTeacher()) {
+        if ($user->isTeacher()) {
             $teacher = $user->teacher ?? null;
             return $teacher && (int) ($material->teacher_id ?? 0) === (int) $teacher->id;
         }
@@ -125,31 +100,27 @@ class StudyMaterialPolicy
      */
     public function download(User $user, StudyMaterial $material): bool
     {
-        // Admin
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        // Teacher: allow if creator or for their subject/class
-        if (method_exists($user, 'isTeacher') && $user->isTeacher()) {
+        if ($user->isTeacher()) {
             $teacher = $user->teacher ?? null;
             if (!$teacher) return false;
             if ((int) ($material->teacher_id ?? 0) === (int) $teacher->id) {
                 return true;
             }
-            // Fallback allow for teachers for now (fine-grained checks can be added)
+            // Fallback allow for teachers for now
             return true;
         }
 
-        // Student: published AND class match
-        if (method_exists($user, 'isStudent') && $user->isStudent()) {
+        if ($user->isStudent()) {
             $student = $user->student ?? null;
             if (!$student) return false;
             return (bool) ($material->is_published ?? false) && (int) $material->class_id === (int) $student->class_id;
         }
 
-        // Guardian: published AND for child's class
-        if (method_exists($user, 'isGuardian') && $user->isGuardian()) {
+        if ($user->isGuardian()) {
             return $this->isForGuardianChild($user, $material);
         }
 
@@ -161,13 +132,11 @@ class StudyMaterialPolicy
      */
     public function togglePublished(User $user, StudyMaterial $material): bool
     {
-        // Admin
-        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        // Teacher who created it can toggle
-        if (method_exists($user, 'isTeacher') && $user->isTeacher()) {
+        if ($user->isTeacher()) {
             $teacher = $user->teacher ?? null;
             return $teacher && (int) ($material->teacher_id ?? 0) === (int) $teacher->id;
         }

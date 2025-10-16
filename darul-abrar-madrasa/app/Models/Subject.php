@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read ClassRoom $class
  * @property-read Teacher|null $teacher
  * @property-read \Illuminate\Database\Eloquent\Collection|Result[] $results
+ * @property-read \Illuminate\Database\Eloquent\Collection|TimetableEntry[] $timetableEntries
  */
 class Subject extends Model
 {
@@ -83,6 +84,16 @@ class Subject extends Model
     public function results()
     {
         return $this->hasMany(Result::class);
+    }
+
+    /**
+     * Get the timetable entries for the subject.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function timetableEntries()
+    {
+        return $this->hasMany(TimetableEntry::class);
     }
 
     /**

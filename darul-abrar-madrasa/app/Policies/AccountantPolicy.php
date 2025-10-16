@@ -12,8 +12,7 @@ class AccountantPolicy
      */
     public function viewAny(User $user): bool
     {
-        // Admins can view accountants list
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 
     /**
@@ -21,12 +20,11 @@ class AccountantPolicy
      */
     public function view(User $user, Accountant $accountant): bool
     {
-        // Admin can view any accountant
-        if ($user->isAdmin() || $user->hasRole('admin')) {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        // Owner check: accountant user viewing their own profile (if needed elsewhere)
+        // Owner check: accountant user viewing their own profile
         return $user->id === $accountant->user_id;
     }
 
@@ -35,8 +33,7 @@ class AccountantPolicy
      */
     public function create(User $user): bool
     {
-        // Admin only
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 
     /**
@@ -44,8 +41,7 @@ class AccountantPolicy
      */
     public function update(User $user, Accountant $accountant): bool
     {
-        // Admin only for admin-facing CRUD
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 
     /**
@@ -53,8 +49,7 @@ class AccountantPolicy
      */
     public function delete(User $user, Accountant $accountant): bool
     {
-        // Admin only
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 
     /**
@@ -62,7 +57,7 @@ class AccountantPolicy
      */
     public function restore(User $user, Accountant $accountant): bool
     {
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 
     /**
@@ -70,6 +65,6 @@ class AccountantPolicy
      */
     public function forceDelete(User $user, Accountant $accountant): bool
     {
-        return $user->isAdmin() || $user->hasRole('admin');
+        return $user->isAdmin();
     }
 }

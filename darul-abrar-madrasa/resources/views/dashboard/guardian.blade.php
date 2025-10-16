@@ -67,6 +67,9 @@
                                 </div>
                             </div>
                             <div class="mt-4 grid grid-cols-2 gap-2">
+                                <a href="{{ route('guardian.child.performance-report', $child) }}" class="col-span-2 text-center px-3 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium">
+                                    📊 View Report
+                                </a>
                                 <a href="{{ route('guardian.child.profile', $child) }}" class="text-center px-3 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200">Profile</a>
                                 <a href="{{ route('guardian.child.attendance', $child) }}" class="text-center px-3 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200">Attendance</a>
                                 <a href="{{ route('guardian.child.results', $child) }}" class="text-center px-3 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200">Results</a>

@@ -4,15 +4,32 @@ namespace App\Http\Requests;
 
 use App\Models\Accountant;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Log;
 
 class StoreAccountantRequest extends FormRequest
 {
     public function authorize(): bool
     {
         // Allow only admins or users authorized by policy to create accountants
-        return $this->user()
+        $authorized = $this->user()
             && ($this->user()->can('create', Accountant::class)
                 || (method_exists($this->user(), 'isAdmin') && $this->user()->isAdmin()));
+
+        // Log failed authorization attempts
+        if (!$authorized && $this->user()) {
+            Log::warning('Unauthorized accountant creation attempt', [
+                'user_id' => $this->user()->id,
+                'user_role' => $this->user()->role ?? 'unknown',
+                'user_email' => $this->user()->email,
+            ]);
+        }
+
+        return $authorized;
+    }
+
+    protected function failedAuthorization()
+    {
+        abort(403, 'You do not have permission to create accountants. Please contact your administrator.');
     }
 
     public function rules(): array
@@ -65,16 +82,5 @@ class StoreAccountantRequest extends FormRequest
             'can_approve_waivers' => $this->boolean('can_approve_waivers'),
             'can_approve_refunds' => $this->boolean('can_approve_refunds'),
         ]);
-    }
-
-    public function withValidator($validator)
-    {
-        $validator->after(function ($v) {
-            $canApprove = $this->boolean('can_approve_waivers');
-            $max = $this->input('max_waiver_amount');
-            if ($canApprove && ($max === null || $max === '')) {
-                $v->errors()->add('max_waiver_amount', 'Maximum waiver amount is required when approval permission is granted.');
-            }
-        });
     }
 }
