@@ -1,3 +1,0 @@
-
-   INFO  Middleware [app/Http/Middleware/CheckRole.php] created successfully.  
-

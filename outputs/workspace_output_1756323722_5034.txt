@@ -1,7 +1,0 @@
-14:use Barryvdh\DomPDF\Facade\Pdf;
-397:     * Generate PDF mark sheet for a student.
-455:        // Generate PDF
-456:        $pdf = PDF::loadView('results.mark-sheet', compact(
-536:     * Generate PDF class result summary.
-554:        // Generate PDF
-555:        $pdf = PDF::loadView('results.class-summary-pdf', compact(

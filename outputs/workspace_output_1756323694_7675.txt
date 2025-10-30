@@ -1,6 +1,0 @@
-    public function myResults(Request $request)
-    {
-        $student = Auth::user()->student;
-        
-        if (!$student) {
-            abort(403, 'You are not registered as a student.');

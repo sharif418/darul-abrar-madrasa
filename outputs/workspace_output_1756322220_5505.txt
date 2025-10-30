@@ -1,5 +1,0 @@
-
-   INFO  Model [app/Models/StudyMaterial.php] created successfully.  
-
-   INFO  Migration [database/migrations/2025_08_27_191700_create_study_materials_table.php] created successfully.  
-

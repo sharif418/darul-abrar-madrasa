@@ -1,5 +1,0 @@
-./vendor/symfony/http-kernel/Kernel.php
-./vendor/laravel/framework/src/Illuminate/Contracts/Console/Kernel.php
-./vendor/laravel/framework/src/Illuminate/Contracts/Http/Kernel.php
-./vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php
-./vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php

@@ -105,4 +105,57 @@ class Student extends Model
     {
         return $this->date_of_birth->age;
     }
+
+    /**
+     * Get guardians for the student.
+     */
+    public function guardians()
+    {
+        return $this->belongsToMany(Guardian::class, 'student_guardians')
+            ->withPivot(['relationship', 'is_primary', 'is_emergency_contact', 'can_pickup', 'receive_communication'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get primary guardian.
+     */
+    public function primaryGuardian()
+    {
+        return $this->belongsToMany(Guardian::class, 'student_guardians')
+            ->wherePivot('is_primary', true)
+            ->withPivot(['relationship', 'is_emergency_contact', 'can_pickup', 'receive_communication'])
+            ->first();
+    }
+
+    /**
+     * Get emergency contacts.
+     */
+    public function emergencyContacts()
+    {
+        return $this->hasMany(EmergencyContact::class)->orderBy('priority');
+    }
+
+    /**
+     * Get student documents.
+     */
+    public function documents()
+    {
+        return $this->hasMany(StudentDocument::class);
+    }
+
+    /**
+     * Get medical record.
+     */
+    public function medicalRecord()
+    {
+        return $this->hasOne(StudentMedicalRecord::class);
+    }
+
+    /**
+     * Get previous education records.
+     */
+    public function previousEducation()
+    {
+        return $this->hasMany(StudentPreviousEducation::class);
+    }
 }

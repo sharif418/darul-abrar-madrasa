@@ -6,14 +6,9 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class CheckRole
+class CheckPermission
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
-    public function handle(Request $request, Closure $next, ...$roles): Response
+    public function handle(Request $request, Closure $next, string $permission): Response
     {
         if (!$request->user()) {
             abort(401, 'Unauthenticated.');
@@ -23,8 +18,8 @@ class CheckRole
             return $next($request);
         }
 
-        if (!in_array($request->user()->role, $roles)) {
-            abort(403, 'Unauthorized action.');
+        if (!$request->user()->hasPermission($permission)) {
+            abort(403, 'You do not have permission to perform this action.');
         }
 
         return $next($request);

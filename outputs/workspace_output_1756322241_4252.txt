@@ -1,3 +1,0 @@
-
-   INFO  Controller [app/Http/Controllers/LessonPlanController.php] created successfully.  
-

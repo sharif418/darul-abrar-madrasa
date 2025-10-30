@@ -1,3 +1,0 @@
-
-   INFO  Controller [app/Http/Controllers/Auth/ProfileController.php] created successfully.  
-

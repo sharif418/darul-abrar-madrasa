@@ -1,5 +1,0 @@
-darul-abrar-madrasa/resources/views/dashboard/student.blade.php
-darul-abrar-madrasa/resources/views/students
-darul-abrar-madrasa/resources/views/attendances/my-attendance.blade.php
-darul-abrar-madrasa/resources/views/fees/my-fees.blade.php
-darul-abrar-madrasa/resources/views/results/my-results.blade.php

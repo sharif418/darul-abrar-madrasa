@@ -25,6 +25,7 @@ class User extends Authenticatable
         'avatar',
         'phone',
         'is_active',
+        'is_super_admin',
     ];
 
     /**
@@ -48,6 +49,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'is_super_admin' => 'boolean',
         ];
     }
     
@@ -97,5 +99,68 @@ class User extends Authenticatable
     public function isStaff()
     {
         return $this->role === 'staff';
+    }
+
+    /**
+     * Check if the user is a guardian.
+     */
+    public function isGuardian()
+    {
+        return $this->role === 'guardian';
+    }
+
+    /**
+     * Check if the user is a super admin.
+     */
+    public function isSuperAdmin()
+    {
+        return $this->is_super_admin === true;
+    }
+
+    /**
+     * Get the guardian record associated with the user.
+     */
+    public function guardian()
+    {
+        return $this->hasOne(Guardian::class);
+    }
+
+    /**
+     * Get user permissions based on role.
+     */
+    public function permissions()
+    {
+        return Permission::whereHas('roles', function ($query) {
+            $query->where('role', $this->role);
+        })->get();
+    }
+
+    /**
+     * Check if user has a specific permission.
+     */
+    public function hasPermission($permissionSlug)
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->permissions()->contains('slug', $permissionSlug);
+    }
+
+    /**
+     * Check if user can perform action on a module.
+     */
+    public function can($action, $module)
+    {
+        $permissionSlug = "{$module}.{$action}";
+        return $this->hasPermission($permissionSlug);
+    }
+
+    /**
+     * Get activity logs for this user.
+     */
+    public function activityLogs()
+    {
+        return $this->hasMany(ActivityLog::class);
     }
 }

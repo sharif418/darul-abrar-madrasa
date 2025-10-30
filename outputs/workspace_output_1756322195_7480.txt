@@ -1,5 +1,0 @@
-
-   INFO  Model [app/Models/GradingScale.php] created successfully.  
-
-   INFO  Migration [database/migrations/2025_08_27_191636_create_grading_scales_table.php] created successfully.  
-

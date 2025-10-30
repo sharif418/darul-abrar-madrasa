@@ -1,5 +1,0 @@
-
-   INFO  Model [app/Models/LessonPlan.php] created successfully.  
-
-   INFO  Migration [database/migrations/2025_08_27_191647_create_lesson_plans_table.php] created successfully.  
-
